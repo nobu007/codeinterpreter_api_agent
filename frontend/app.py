@@ -2,15 +2,11 @@ import asyncio
 import traceback
 from datetime import datetime
 
-import streamlit as st  # type: ignore
-from code_interpreter import CodeInterpreter
-from db_manager import DBManager
+import streamlit as st# type: ignore
+from utils import get_images  # type: ignore
 
-<<<<<<< HEAD
 from codeinterpreterapi.config import settings
-=======
 from codeinterpreterapi import File
-from utils import get_images
 
 # Page configuration
 st.set_page_config(layout="wide")
@@ -20,7 +16,6 @@ st.title("Code Interpreter API 🚀")
 # This will create a sidebar
 st.sidebar.title("Code Interpreter API 🚀")
 st.sidebar.markdown("[Github Repo](https://github.com/shroominic/codeinterpreter-api)")
->>>>>>> 5243f69 (fixes app.py to make it run (#122))
 
 
 def show_image(file_: bytes, caption: str = ""):
