@@ -7,6 +7,7 @@ from utils import get_images  # type: ignore
 
 from codeinterpreterapi.config import settings
 from codeinterpreterapi import File
+from utils import get_images  # type: ignore
 
 # Page configuration
 st.set_page_config(layout="wide")
