@@ -39,7 +39,7 @@ async def aremove_download_link(
 
 
 def test() -> None:
-    llm = ChatOpenAI(model="gpt-3.5-turbo-0613")  # type: ignore
+    llm = ChatOpenAI(model="claude-3-haiku-20240307")  # type: ignore
 
     example = (
         "I have created the plot to your dataset.\n\n"

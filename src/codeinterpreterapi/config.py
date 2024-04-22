@@ -22,7 +22,7 @@ class CodeInterpreterAPISettings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[SecretStr] = None
 
     # LLM Settings
-    MODEL: str = "gpt-3.5-turbo"
+    MODEL: str = "claude-3-haiku-20240307"
     TEMPERATURE: float = 0.03
     DETAILED_ERROR: bool = True
     SYSTEM_MESSAGE: SystemMessage = code_interpreter_system_message

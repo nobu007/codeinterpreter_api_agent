@@ -8,7 +8,7 @@ from codeinterpreterapi.chains import (
 )
 from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI("claude-3-haiku-20240307")
 
 remove_download_link_example = (
     "I have created the plot to your dataset.\n\n"
