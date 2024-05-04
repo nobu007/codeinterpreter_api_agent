@@ -1,7 +1,5 @@
 import tempfile
-import shlex
 import subprocess
-import os
 import base64
 import re
 import traceback
@@ -21,7 +19,6 @@ from langchain.agents import (
 from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 from langchain.callbacks.base import Callbacks
 from langchain.chat_models.base import BaseChatModel
-from langchain.memory.buffer import ConversationBufferMemory
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 from langchain_community.chat_message_histories.postgres import (
     PostgresChatMessageHistory,
@@ -30,7 +27,7 @@ from langchain_community.chat_message_histories.redis import RedisChatMessageHis
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts.chat import MessagesPlaceholder
-from langchain_core.tools import BaseTool, StructuredTool
+from langchain_core.tools import BaseTool
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 from codeinterpreterapi.chains import (
@@ -42,12 +39,15 @@ from codeinterpreterapi.chains import (
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.schema import (
-    CodeInput,
     CodeInterpreterResponse,
     File,
     SessionStatus,
     UserRequest,
 )
+
+from .tools.tools import CodeInterpreterTools
+from .agents.agents import CodeInterpreterAgent
+from .llm.llm import CodeInterpreterLlm
 
 
 def _handle_deprecated_kwargs(kwargs: dict) -> None:
@@ -72,14 +72,22 @@ class CodeInterpreterSession:
         self.is_local = is_local
         self.codebox = CodeBox(requirements=settings.CUSTOM_PACKAGES)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
-        self.tools: list[BaseTool] = self._tools(additional_tools)
-        self.llm: BaseLanguageModel = llm or self._choose_llm()
+        run_handler_func = self._run_handler
+        arun_handler_func = self._arun_handler
+        if self.is_local:
+            run_handler_func = self._run_handler_local
+            arun_handler_func = self._arun_handler_local
+        self.tools: list[BaseTool] = CodeInterpreterTools.get_tools(
+            additional_tools, run_handler_func, arun_handler_func
+        )
+        self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
+        self.log("self.llm=" + str(self.llm))
+
         self.callbacks = callbacks
         self.agent_executor: Optional[AgentExecutor] = None
         self.input_files: list[File] = []
         self.output_files: list[File] = []
         self.code_log: list[tuple[str, str]] = []
-        print("self.llm=", self.llm)
 
     @classmethod
     def from_id(cls, session_id: UUID, **kwargs: Any) -> "CodeInterpreterSession":
@@ -92,10 +100,20 @@ class CodeInterpreterSession:
     def session_id(self) -> Optional[UUID]:
         return self.codebox.session_id
 
+    def initialize_agent_executor(self):
+        agent_executor = CodeInterpreterAgent.create_agent_and_executor(
+            llm=self.llm,
+            tools=self.tools,
+            verbose=self.verbose,
+            chat_memory=self._history_backend(),
+            callbacks=self.callbacks,
+        )
+        return agent_executor
+
     def start(self) -> SessionStatus:
         print("start")
         status = SessionStatus.from_codebox_status(self.codebox.start())
-        self.agent_executor = self._agent_executor()
+        self.agent_executor = self.initialize_agent_executor()
         self.codebox.run(
             f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
         )
@@ -104,7 +122,7 @@ class CodeInterpreterSession:
     async def astart(self) -> SessionStatus:
         print("astart")
         status = SessionStatus.from_codebox_status(await self.codebox.astart())
-        self.agent_executor = self._agent_executor()
+        self.agent_executor = self.initialize_agent_executor()
         await self.codebox.arun(
             f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
         )
@@ -112,7 +130,7 @@ class CodeInterpreterSession:
 
     def start_local(self) -> SessionStatus:
         print("start_local")
-        self.agent_executor = self._agent_executor()
+        self.agent_executor = self.initialize_agent_executor()
         status = SessionStatus(status="started")
         return status
 
@@ -120,76 +138,6 @@ class CodeInterpreterSession:
         print("astart_local")
         status = self.start_local()
         return status
-
-    def _tools(self, additional_tools: list[BaseTool]) -> list[BaseTool]:
-        run_handler_func = self._run_handler
-        arun_handler_func = self._arun_handler
-        if self.is_local:
-            run_handler_func = self._run_handler_local
-            arun_handler_func = self._arun_handler_local
-        return additional_tools + [
-            StructuredTool(
-                name="python",
-                description="Input a string of code to a ipython interpreter. "
-                "Write the entire code in a single string. This string can "
-                "be really long, so you can use the `;` character to split lines. "
-                "Start your code on the same line as the opening quote. "
-                "Do not start your code with a line break. "
-                "For example, do 'import numpy', not '\\nimport numpy'."
-                "Variables are preserved between runs. "
-                + (
-                    (
-                        "You can use all default python packages "
-                        f"specifically also these: {settings.CUSTOM_PACKAGES}"
-                    )
-                    if settings.CUSTOM_PACKAGES
-                    else ""
-                ),  # TODO: or include this in the system message
-                func=run_handler_func,
-                coroutine=arun_handler_func,
-                args_schema=CodeInput,  # type: ignore
-            ),
-        ]
-
-    def _choose_llm(self) -> BaseChatModel:
-        if (
-            settings.AZURE_OPENAI_API_KEY
-            and settings.AZURE_API_BASE
-            and settings.AZURE_API_VERSION
-            and settings.AZURE_DEPLOYMENT_NAME
-        ):
-            self.log("Using Azure Chat OpenAI")
-            return AzureChatOpenAI(
-                temperature=0.03,
-                base_url=settings.AZURE_API_BASE,
-                api_version=settings.AZURE_API_VERSION,
-                azure_deployment=settings.AZURE_DEPLOYMENT_NAME,
-                api_key=settings.AZURE_OPENAI_API_KEY,
-                max_retries=settings.MAX_RETRY,
-                timeout=settings.REQUEST_TIMEOUT,
-            )  # type: ignore
-        if settings.OPENAI_API_KEY:
-            from langchain_openai import ChatOpenAI
-
-            return ChatOpenAI(
-                model=settings.MODEL,
-                api_key=settings.OPENAI_API_KEY,
-                timeout=settings.REQUEST_TIMEOUT,
-                temperature=settings.TEMPERATURE,
-                max_retries=settings.MAX_RETRY,
-            )  # type: ignore
-        if settings.ANTHROPIC_API_KEY:
-            from langchain_anthropic import ChatAnthropic  # type: ignore
-
-            if "claude" not in settings.MODEL:
-                print("Please set the claude model in the settings.")
-            self.log("Using Chat Anthropic")
-            return ChatAnthropic(
-                model_name=settings.MODEL,
-                temperature=settings.TEMPERATURE,
-                anthropic_api_key=settings.ANTHROPIC_API_KEY,
-            )
-        raise ValueError("Please set the API key for the LLM you want to use.")
 
     def _choose_agent(self) -> BaseSingleActionAgent:
         if isinstance(self.llm, ChatOpenAI) or isinstance(self.llm, AzureChatOpenAI):
@@ -236,21 +184,6 @@ class CodeInterpreterSession:
                     else ChatMessageHistory()
                 )
             )
-        )
-
-    def _agent_executor(self) -> AgentExecutor:
-        agent = self._choose_agent()
-        return AgentExecutor.from_agent_and_tools(
-            agent=agent,
-            max_iterations=settings.MAX_ITERATIONS,
-            tools=self.tools,
-            verbose=self.verbose,
-            memory=ConversationBufferMemory(
-                memory_key="chat_history",
-                return_messages=True,
-                chat_memory=self._history_backend(),
-            ),
-            callbacks=self.callbacks,
         )
 
     def show_code(self, code: str) -> None:
