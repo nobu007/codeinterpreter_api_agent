@@ -39,9 +39,12 @@ async def start_chat() -> None:
 
 
 @cl.on_message
-async def run_conversation(user_message: str) -> None:
+async def run_conversation(user_message: str, is_local=True) -> None:
     session = CodeInterpreterSession()
-    await session.astart()
+    if is_local:
+        await session.astart_local()
+    else:
+        await session.astart()
 
     files = [CIFile(name=it.name, content=it.content) for it in UPLOADED_FILES]
 

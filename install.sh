@@ -1,9 +1,5 @@
 # AUTO DEV INSTALL
 
-export PATH="$HOME/.rye/shims:$PATH"
-
-cd /app
-echo "ACTIVATE: activate .venv"
-source .venv/bin/activate
-
+pwd
+eval "$(pyenv init -)"
 pip install -e .

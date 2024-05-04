@@ -6,7 +6,7 @@ LOG_FILE="/app/work/all.log"
 log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') $1" | tee -a "$LOG_FILE"
 }
-APP_START_PY="/app/examples/frontend/app.py"
+APP_START_PY="/app/server.py"
 
 # /app/server.pyが起動しているかチェック
 if ! pgrep -f "python ${APP_START_PY}" >/dev/null; then
@@ -14,6 +14,7 @@ if ! pgrep -f "python ${APP_START_PY}" >/dev/null; then
     # open_interpreterを起動
     if bash -c "eval $(pyenv init -) && python ${APP_START_PY} >> $LOG_FILE  2>&1" & then
         log "${APP_START_PY} started successfully."
+        sleep 3600
         exit 0
     else
         log "Failed to start ${APP_START_PY}."

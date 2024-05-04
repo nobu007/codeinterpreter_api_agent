@@ -1,21 +1,13 @@
-from interpreter.core.core import OpenInterpreter
-from ui.server_impl import server
+from codeinterpreterapi import CodeInterpreterSession
 
-interpreter = OpenInterpreter(
-    auto_run=True,
-)
-print("interpreter.sync_computer=", interpreter.sync_computer)
-interpreter.llm.model = "claude-3-haiku-20240307"
-interpreter.llm.max_tokens = 2000
-interpreter.verbose = True
-interpreter.sync_computer = True
-interpreter.system_message += """
-Your workdir is "/app/work". You should save any input and output files in this directory.
-If you lost previous work, you should check this directory and result from files.
-"""
-print("system_message=", interpreter.system_message)
+model = "claude-3-haiku-20240307"
+session = CodeInterpreterSession(model=model)
 
-computer = interpreter.computer
-computer.debug = True
-computer.verbose = True
-server(interpreter)
+try:
+    status = session.start_local()
+    result = session.generate_response(
+        "Plot the nvidea stock vs microsoft stock over the last 6 months."
+    )
+    result.show()
+except Exception as e:
+    print(e)

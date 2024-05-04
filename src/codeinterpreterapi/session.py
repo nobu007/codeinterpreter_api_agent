@@ -1,3 +1,7 @@
+import tempfile
+import shlex
+import subprocess
+import os
 import base64
 import re
 import traceback
@@ -61,9 +65,11 @@ class CodeInterpreterSession:
         llm: Optional[BaseLanguageModel] = None,
         additional_tools: list[BaseTool] = [],
         callbacks: Callbacks = None,
+        is_local: bool = True,
         **kwargs: Any,
     ) -> None:
         _handle_deprecated_kwargs(kwargs)
+        self.is_local = is_local
         self.codebox = CodeBox(requirements=settings.CUSTOM_PACKAGES)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
         self.tools: list[BaseTool] = self._tools(additional_tools)
@@ -73,6 +79,7 @@ class CodeInterpreterSession:
         self.input_files: list[File] = []
         self.output_files: list[File] = []
         self.code_log: list[tuple[str, str]] = []
+        print("self.llm=", self.llm)
 
     @classmethod
     def from_id(cls, session_id: UUID, **kwargs: Any) -> "CodeInterpreterSession":
@@ -86,6 +93,7 @@ class CodeInterpreterSession:
         return self.codebox.session_id
 
     def start(self) -> SessionStatus:
+        print("start")
         status = SessionStatus.from_codebox_status(self.codebox.start())
         self.agent_executor = self._agent_executor()
         self.codebox.run(
@@ -94,6 +102,7 @@ class CodeInterpreterSession:
         return status
 
     async def astart(self) -> SessionStatus:
+        print("astart")
         status = SessionStatus.from_codebox_status(await self.codebox.astart())
         self.agent_executor = self._agent_executor()
         await self.codebox.arun(
@@ -101,7 +110,23 @@ class CodeInterpreterSession:
         )
         return status
 
+    def start_local(self) -> SessionStatus:
+        print("start_local")
+        self.agent_executor = self._agent_executor()
+        status = SessionStatus(status="started")
+        return status
+
+    async def astart_local(self) -> SessionStatus:
+        print("astart_local")
+        status = self.start_local()
+        return status
+
     def _tools(self, additional_tools: list[BaseTool]) -> list[BaseTool]:
+        run_handler_func = self._run_handler
+        arun_handler_func = self._arun_handler
+        if self.is_local:
+            run_handler_func = self._run_handler_local
+            arun_handler_func = self._arun_handler_local
         return additional_tools + [
             StructuredTool(
                 name="python",
@@ -120,8 +145,8 @@ class CodeInterpreterSession:
                     if settings.CUSTOM_PACKAGES
                     else ""
                 ),  # TODO: or include this in the system message
-                func=self._run_handler,
-                coroutine=self._arun_handler,
+                func=run_handler_func,
+                coroutine=arun_handler_func,
                 args_schema=CodeInput,  # type: ignore
             ),
         ]
@@ -167,8 +192,9 @@ class CodeInterpreterSession:
         raise ValueError("Please set the API key for the LLM you want to use.")
 
     def _choose_agent(self) -> BaseSingleActionAgent:
-        return (
-            OpenAIFunctionsAgent.from_llm_and_tools(
+        if isinstance(self.llm, ChatOpenAI) or isinstance(self.llm, AzureChatOpenAI):
+            print("_choose_agent OpenAIFunctionsAgent")
+            return OpenAIFunctionsAgent.from_llm_and_tools(
                 llm=self.llm,
                 tools=self.tools,
                 system_message=settings.SYSTEM_MESSAGE,
@@ -176,40 +202,46 @@ class CodeInterpreterSession:
                     MessagesPlaceholder(variable_name="chat_history")
                 ],
             )
-            if isinstance(self.llm, ChatOpenAI) or isinstance(self.llm, AzureChatOpenAI)
-            else ConversationalChatAgent.from_llm_and_tools(
+        elif isinstance(self.llm, BaseChatModel):
+            print("_choose_agent ConversationalChatAgent(ANTHROPIC)")
+            return ConversationalChatAgent.from_llm_and_tools(
                 llm=self.llm,
                 tools=self.tools,
                 system_message=settings.SYSTEM_MESSAGE.content.__str__(),
             )
-            if isinstance(self.llm, BaseChatModel)
-            else ConversationalAgent.from_llm_and_tools(
+        else:
+            print("_choose_agent ConversationalAgent(default)")
+            return ConversationalAgent.from_llm_and_tools(
                 llm=self.llm,
                 tools=self.tools,
                 prefix=settings.SYSTEM_MESSAGE.content.__str__(),
             )
-        )
 
     def _history_backend(self) -> BaseChatMessageHistory:
         return (
             CodeBoxChatMessageHistory(codebox=self.codebox)
             if settings.HISTORY_BACKEND == "codebox"
-            else RedisChatMessageHistory(
-                session_id=str(self.session_id),
-                url=settings.REDIS_URL,
+            else (
+                RedisChatMessageHistory(
+                    session_id=str(self.session_id),
+                    url=settings.REDIS_URL,
+                )
+                if settings.HISTORY_BACKEND == "redis"
+                else (
+                    PostgresChatMessageHistory(
+                        session_id=str(self.session_id),
+                        connection_string=settings.POSTGRES_URL,
+                    )
+                    if settings.HISTORY_BACKEND == "postgres"
+                    else ChatMessageHistory()
+                )
             )
-            if settings.HISTORY_BACKEND == "redis"
-            else PostgresChatMessageHistory(
-                session_id=str(self.session_id),
-                connection_string=settings.POSTGRES_URL,
-            )
-            if settings.HISTORY_BACKEND == "postgres"
-            else ChatMessageHistory()
         )
 
     def _agent_executor(self) -> AgentExecutor:
+        agent = self._choose_agent()
         return AgentExecutor.from_agent_and_tools(
-            agent=self._choose_agent(),
+            agent=agent,
             max_iterations=settings.MAX_ITERATIONS,
             tools=self.tools,
             verbose=self.verbose,
@@ -229,6 +261,40 @@ class CodeInterpreterSession:
         """Callback function to show code to the user."""
         if self.verbose:
             print(code)
+
+    def _get_handler_local_command(self, code: str):
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".py"
+        ) as temp_file:
+            temp_file.write(code)
+            temp_file_path = temp_file.name
+
+            command = f"cd src/codeinterpreterapi/invoke_tasks && invoke -c python run-code-file '{temp_file_path}'"
+            return command
+
+    def _run_handler_local(self, code: str):
+        command = self._get_handler_local_command(code)
+        try:
+            output_content = subprocess.check_output(
+                command, shell=True, universal_newlines=True
+            )
+            self.code_log.append((code, output_content))
+            return output_content
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred: {e}")
+            return None
+
+    async def _arun_handler_local(self, code: str):
+        command = self._get_handler_local_command(code)
+        try:
+            output_content = await subprocess.check_output(
+                command, shell=True, universal_newlines=True
+            )
+            self.code_log.append((code, output_content))
+            return output_content
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred: {e}")
+            return None
 
     def _run_handler(self, code: str) -> str:
         """Run code in container and send the output to the user"""
@@ -378,9 +444,10 @@ class CodeInterpreterSession:
         self.output_files = []
         self.code_log = []
 
-        return CodeInterpreterResponse(
+        response = CodeInterpreterResponse(
             content=final_response, files=output_files, code_log=code_log
         )
+        return response
 
     async def _aoutput_handler(self, final_response: str) -> CodeInterpreterResponse:
         """Embed images in the response"""
@@ -401,9 +468,10 @@ class CodeInterpreterSession:
         self.output_files = []
         self.code_log = []
 
-        return CodeInterpreterResponse(
+        response = CodeInterpreterResponse(
             content=final_response, files=output_files, code_log=code_log
         )
+        return response.output
 
     def generate_response_sync(
         self,
@@ -426,8 +494,11 @@ class CodeInterpreterSession:
         try:
             self._input_handler(user_request)
             assert self.agent_executor, "Session not initialized."
-            response = self.agent_executor.run(input=user_request.content)
-            return self._output_handler(response)
+            print(user_request.content)
+            response = self.agent_executor.invoke(input=user_request.content)
+            output = response["output"]
+            print("agent_executor.invoke output=", output)
+            return self._output_handler(output)
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
@@ -452,8 +523,10 @@ class CodeInterpreterSession:
         try:
             await self._ainput_handler(user_request)
             assert self.agent_executor, "Session not initialized."
-            response = await self.agent_executor.arun(input=user_request.content)
-            return await self._aoutput_handler(response)
+            response = await self.agent_executor.ainvoke(input=user_request.content)
+            output = response["output"]
+            print("agent_executor.invoke output=", output)
+            return await self._aoutput_handler(output)
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
@@ -485,7 +558,10 @@ class CodeInterpreterSession:
         return SessionStatus.from_codebox_status(await self.codebox.astop())
 
     def __enter__(self) -> "CodeInterpreterSession":
-        self.start()
+        if self.is_local:
+            self.start_local()
+        else:
+            self.start()
         return self
 
     def __exit__(

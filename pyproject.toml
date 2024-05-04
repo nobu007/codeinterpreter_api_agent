@@ -8,6 +8,7 @@ dependencies = [
     "codeboxapi>=0.1.19",
     "langchain>=0.1.14",
     "pyzmq==25.1.2",
+    "invoke>=2.2.0",
 ]
 license = { file = "LICENSE" }
 readme = "README.md"
