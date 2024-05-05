@@ -1,12 +1,29 @@
 from langchain_core.tools import BaseTool, StructuredTool
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.schema import CodeInput
+from langchain_community.tools.shell.tool import ShellInput
+from langchain_experimental.plan_and_execute.agent_executor import (
+    PlanAndExecute,
+)
+from langchain.agents.tools import Tool
+from langchain_community.tools.tavily_search import TavilySearchResults
 
 
 class CodeInterpreterTools:
 
     @staticmethod
-    def get_tools(
+    def get_all(
+        additional_tools: list[BaseTool], run_handler_func, arun_handler_func
+    ) -> list[BaseTool]:
+        additional_tools = CodeInterpreterTools.get_python(
+            additional_tools, run_handler_func, arun_handler_func
+        )
+        additional_tools = CodeInterpreterTools.get_shell(additional_tools)
+        additional_tools = CodeInterpreterTools.get_web_search(additional_tools)
+        return additional_tools
+
+    @staticmethod
+    def get_python(
         additional_tools: list[BaseTool], run_handler_func, arun_handler_func
     ) -> list[BaseTool]:
         return additional_tools + [
@@ -32,3 +49,15 @@ class CodeInterpreterTools:
                 args_schema=CodeInput,  # type: ignore
             ),
         ]
+
+    @staticmethod
+    def get_shell(additional_tools: list[BaseTool]) -> list[BaseTool]:
+        # TODO: use ShellInput
+        # tools = [ShellInput()]
+        return additional_tools
+
+    @staticmethod
+    def get_web_search(additional_tools: list[BaseTool]) -> list[BaseTool]:
+        # TODO: use ShellInput
+        tools = [TavilySearchResults(max_results=1)]
+        return additional_tools + tools

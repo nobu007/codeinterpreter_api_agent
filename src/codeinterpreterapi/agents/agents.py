@@ -54,8 +54,8 @@ class CodeInterpreterAgent:
 
         # agent
         agent = CodeInterpreterAgent.choose_agent(llm, tools)
-        print("create_agent_and_executor agent=")
-        pprint.pprint(agent)
+        print("create_agent_and_executor agent=", str(type(agent)))
+        # pprint.pprint(agent)
 
         # agent_executor
         agent_executor = AgentExecutor.from_agent_and_tools(
@@ -70,7 +70,8 @@ class CodeInterpreterAgent:
             ),
             callbacks=callbacks,
         )
-        print("create_agent_and_executor agent_executor=")
-        pprint.pprint(agent_executor)
+        print("create_agent_and_executor agent_executor tools:")
+        for tool in agent_executor.tools:
+            pprint.pprint(tool)
 
         return agent_executor

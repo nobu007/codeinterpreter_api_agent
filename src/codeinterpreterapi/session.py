@@ -12,13 +12,8 @@ from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxOutput  # type: ignore
 from langchain.agents import (
     AgentExecutor,
-    BaseSingleActionAgent,
-    ConversationalAgent,
-    ConversationalChatAgent,
 )
-from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 from langchain.callbacks.base import Callbacks
-from langchain.chat_models.base import BaseChatModel
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 from langchain_community.chat_message_histories.postgres import (
     PostgresChatMessageHistory,
@@ -26,9 +21,7 @@ from langchain_community.chat_message_histories.postgres import (
 from langchain_community.chat_message_histories.redis import RedisChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.prompts.chat import MessagesPlaceholder
 from langchain_core.tools import BaseTool
-from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 from codeinterpreterapi.chains import (
     aget_file_modifications,
@@ -77,7 +70,7 @@ class CodeInterpreterSession:
         if self.is_local:
             run_handler_func = self._run_handler_local
             arun_handler_func = self._arun_handler_local
-        self.tools: list[BaseTool] = CodeInterpreterTools.get_tools(
+        self.tools: list[BaseTool] = CodeInterpreterTools.get_all(
             additional_tools, run_handler_func, arun_handler_func
         )
         self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
@@ -93,7 +86,7 @@ class CodeInterpreterSession:
     def from_id(cls, session_id: UUID, **kwargs: Any) -> "CodeInterpreterSession":
         session = cls(**kwargs)
         session.codebox = CodeBox.from_id(session_id)
-        session.agent_executor = session._agent_executor()
+        session.agent_executor = CodeInterpreterAgent.create_agent_and_executor()
         return session
 
     @property
@@ -138,32 +131,6 @@ class CodeInterpreterSession:
         print("astart_local")
         status = self.start_local()
         return status
-
-    def _choose_agent(self) -> BaseSingleActionAgent:
-        if isinstance(self.llm, ChatOpenAI) or isinstance(self.llm, AzureChatOpenAI):
-            print("_choose_agent OpenAIFunctionsAgent")
-            return OpenAIFunctionsAgent.from_llm_and_tools(
-                llm=self.llm,
-                tools=self.tools,
-                system_message=settings.SYSTEM_MESSAGE,
-                extra_prompt_messages=[
-                    MessagesPlaceholder(variable_name="chat_history")
-                ],
-            )
-        elif isinstance(self.llm, BaseChatModel):
-            print("_choose_agent ConversationalChatAgent(ANTHROPIC)")
-            return ConversationalChatAgent.from_llm_and_tools(
-                llm=self.llm,
-                tools=self.tools,
-                system_message=settings.SYSTEM_MESSAGE.content.__str__(),
-            )
-        else:
-            print("_choose_agent ConversationalAgent(default)")
-            return ConversationalAgent.from_llm_and_tools(
-                llm=self.llm,
-                tools=self.tools,
-                prefix=settings.SYSTEM_MESSAGE.content.__str__(),
-            )
 
     def _history_backend(self) -> BaseChatMessageHistory:
         return (
