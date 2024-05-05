@@ -6,9 +6,16 @@ authors = [{ name = "Shroominic", email = "contact@shroominic.com" }]
 dependencies = [
     "langchain-openai>=0.1.1",
     "codeboxapi>=0.1.19",
-    "langchain>=0.1.14",
+    "langchain>=0.1.14", #TODO: remove
     "pyzmq==25.1.2",
     "invoke>=2.2.0",
+    "langchain>=0.1.16",
+    "langchain-anthropic>=0.1.11",
+    "langchain_experimental>=0.0.57",
+    "langchain-google-genai>=1.0.3",
+    "langchain_community>=0.0.34",
+    "langchain_experimental>=0.0.57",
+    "langchain-core>=0.1.46",
 ]
 license = { file = "LICENSE" }
 readme = "README.md"
