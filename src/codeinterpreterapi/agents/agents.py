@@ -1,11 +1,6 @@
 import pprint
 
-from langchain.agents import (
-    AgentExecutor,
-    BaseSingleActionAgent,
-    ConversationalAgent,
-    ConversationalChatAgent,
-)
+from langchain.agents import AgentExecutor, BaseSingleActionAgent, ConversationalAgent, ConversationalChatAgent
 from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 from langchain.chat_models.base import BaseChatModel
 from langchain.memory.buffer import ConversationBufferMemory
@@ -16,7 +11,6 @@ from codeinterpreterapi.config import settings
 
 
 class CodeInterpreterAgent:
-
     @staticmethod
     def choose_agent(
         llm,
@@ -28,9 +22,7 @@ class CodeInterpreterAgent:
                 llm=llm,
                 tools=tools,
                 system_message=settings.SYSTEM_MESSAGE,
-                extra_prompt_messages=[
-                    MessagesPlaceholder(variable_name="chat_history")
-                ],
+                extra_prompt_messages=[MessagesPlaceholder(variable_name="chat_history")],
             )
         elif isinstance(llm, BaseChatModel):
             print("choose_agent ConversationalChatAgent(ANTHROPIC)")
@@ -48,10 +40,7 @@ class CodeInterpreterAgent:
             )
 
     @staticmethod
-    def create_agent_and_executor(
-        llm, tools, verbose, chat_memory, callbacks
-    ) -> AgentExecutor:
-
+    def create_agent_and_executor(llm, tools, verbose, chat_memory, callbacks) -> AgentExecutor:
         # agent
         agent = CodeInterpreterAgent.choose_agent(llm, tools)
         print("create_agent_and_executor agent=", str(type(agent)))

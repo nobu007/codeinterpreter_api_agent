@@ -10,9 +10,7 @@ def remove_download_link(
     input_response: str,
     llm: BaseLanguageModel,
 ) -> str:
-    messages = remove_dl_link_prompt.format_prompt(
-        input_response=input_response
-    ).to_messages()
+    messages = remove_dl_link_prompt.format_prompt(input_response=input_response).to_messages()
     message = llm.invoke(messages)
 
     if not isinstance(message, AIMessage):
@@ -26,9 +24,7 @@ async def aremove_download_link(
     input_response: str,
     llm: BaseLanguageModel,
 ) -> str:
-    messages = remove_dl_link_prompt.format_prompt(
-        input_response=input_response
-    ).to_messages()
+    messages = remove_dl_link_prompt.format_prompt(input_response=input_response).to_messages()
     message = await llm.ainvoke(messages)
 
     if not isinstance(message, AIMessage):
@@ -41,10 +37,7 @@ async def aremove_download_link(
 def test() -> None:
     llm = ChatOpenAI(model="claude-3-haiku-20240307")  # type: ignore
 
-    example = (
-        "I have created the plot to your dataset.\n\n"
-        "Link to the file [here](sandbox:/plot.png)."
-    )
+    example = "I have created the plot to your dataset.\n\n" "Link to the file [here](sandbox:/plot.png)."
     print(remove_download_link(example, llm))
 
 

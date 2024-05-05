@@ -1,7 +1,7 @@
-import tempfile
-import subprocess
 import base64
 import re
+import subprocess
+import tempfile
 import traceback
 from io import BytesIO
 from types import TracebackType
@@ -10,14 +10,10 @@ from uuid import UUID, uuid4
 
 from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxOutput  # type: ignore
-from langchain.agents import (
-    AgentExecutor,
-)
+from langchain.agents import AgentExecutor
 from langchain.callbacks.base import Callbacks
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
-from langchain_community.chat_message_histories.postgres import (
-    PostgresChatMessageHistory,
-)
+from langchain_community.chat_message_histories.postgres import PostgresChatMessageHistory
 from langchain_community.chat_message_histories.redis import RedisChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
@@ -31,16 +27,11 @@ from codeinterpreterapi.chains import (
 )
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
-from codeinterpreterapi.schema import (
-    CodeInterpreterResponse,
-    File,
-    SessionStatus,
-    UserRequest,
-)
+from codeinterpreterapi.schema import CodeInterpreterResponse, File, SessionStatus, UserRequest
 
-from .tools.tools import CodeInterpreterTools
 from .agents.agents import CodeInterpreterAgent
 from .llm.llm import CodeInterpreterLlm
+from .tools.tools import CodeInterpreterTools
 
 
 def _handle_deprecated_kwargs(kwargs: dict) -> None:
@@ -70,9 +61,7 @@ class CodeInterpreterSession:
         if self.is_local:
             run_handler_func = self._run_handler_local
             arun_handler_func = self._arun_handler_local
-        self.tools: list[BaseTool] = CodeInterpreterTools.get_all(
-            additional_tools, run_handler_func, arun_handler_func
-        )
+        self.tools: list[BaseTool] = CodeInterpreterTools.get_all(additional_tools, run_handler_func, arun_handler_func)
         self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
         self.log("self.llm=" + str(self.llm))
 
@@ -163,9 +152,7 @@ class CodeInterpreterSession:
             print(code)
 
     def _get_handler_local_command(self, code: str):
-        with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".py"
-        ) as temp_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".py") as temp_file:
             temp_file.write(code)
             temp_file_path = temp_file.name
 
@@ -175,9 +162,7 @@ class CodeInterpreterSession:
     def _run_handler_local(self, code: str):
         command = self._get_handler_local_command(code)
         try:
-            output_content = subprocess.check_output(
-                command, shell=True, universal_newlines=True
-            )
+            output_content = subprocess.check_output(command, shell=True, universal_newlines=True)
             self.code_log.append((code, output_content))
             return output_content
         except subprocess.CalledProcessError as e:
@@ -187,9 +172,7 @@ class CodeInterpreterSession:
     async def _arun_handler_local(self, code: str):
         command = self._get_handler_local_command(code)
         try:
-            output_content = await subprocess.check_output(
-                command, shell=True, universal_newlines=True
-            )
+            output_content = await subprocess.check_output(command, shell=True, universal_newlines=True)
             self.code_log.append((code, output_content))
             return output_content
         except subprocess.CalledProcessError as e:
@@ -219,10 +202,7 @@ class CodeInterpreterSession:
                     output.content,
                 ):
                     self.codebox.install(package.group(1))
-                    return (
-                        f"{package.group(1)} was missing but "
-                        "got installed now. Please try again."
-                    )
+                    return f"{package.group(1)} was missing but " "got installed now. Please try again."
             else:
                 # TODO: pre-analyze error to optimize next code generation
                 pass
@@ -238,9 +218,7 @@ class CodeInterpreterSession:
                     continue
                 file_buffer = BytesIO(fileb.content)
                 file_buffer.name = filename
-                self.output_files.append(
-                    File(name=filename, content=file_buffer.read())
-                )
+                self.output_files.append(File(name=filename, content=file_buffer.read()))
 
         return output.content
 
@@ -267,10 +245,7 @@ class CodeInterpreterSession:
                     output.content,
                 ):
                     await self.codebox.ainstall(package.group(1))
-                    return (
-                        f"{package.group(1)} was missing but "
-                        "got installed now. Please try again."
-                    )
+                    return f"{package.group(1)} was missing but " "got installed now. Please try again."
             else:
                 # TODO: pre-analyze error to optimize next code generation
                 pass
@@ -286,9 +261,7 @@ class CodeInterpreterSession:
                     continue
                 file_buffer = BytesIO(fileb.content)
                 file_buffer.name = filename
-                self.output_files.append(
-                    File(name=filename, content=file_buffer.read())
-                )
+                self.output_files.append(File(name=filename, content=file_buffer.read()))
 
         return output.content
 
@@ -297,9 +270,7 @@ class CodeInterpreterSession:
         if not request.files:
             return
         if not request.content:
-            request.content = (
-                "I uploaded, just text me back and confirm that you got the file(s)."
-            )
+            request.content = "I uploaded, just text me back and confirm that you got the file(s)."
         assert isinstance(request.content, str), "TODO: implement image support"
         request.content += "\n**The user uploaded the following files: **\n"
         for file in request.files:
@@ -314,9 +285,7 @@ class CodeInterpreterSession:
         if not request.files:
             return
         if not request.content:
-            request.content = (
-                "I uploaded, just text me back and confirm that you got the file(s)."
-            )
+            request.content = "I uploaded, just text me back and confirm that you got the file(s)."
         assert isinstance(request.content, str), "TODO: implement image support"
         request.content += "\n**The user uploaded the following files: **\n"
         for file in request.files:
@@ -344,9 +313,7 @@ class CodeInterpreterSession:
         self.output_files = []
         self.code_log = []
 
-        response = CodeInterpreterResponse(
-            content=final_response, files=output_files, code_log=code_log
-        )
+        response = CodeInterpreterResponse(content=final_response, files=output_files, code_log=code_log)
         return response
 
     async def _aoutput_handler(self, final_response: str) -> CodeInterpreterResponse:
@@ -368,9 +335,7 @@ class CodeInterpreterSession:
         self.output_files = []
         self.code_log = []
 
-        response = CodeInterpreterResponse(
-            content=final_response, files=output_files, code_log=code_log
-        )
+        response = CodeInterpreterResponse(content=final_response, files=output_files, code_log=code_log)
         return response.output
 
     def generate_response_sync(
@@ -404,8 +369,7 @@ class CodeInterpreterSession:
                 traceback.print_exc()
             if settings.DETAILED_ERROR:
                 return CodeInterpreterResponse(
-                    content="Error in CodeInterpreterSession: "
-                    f"{e.__class__.__name__}  - {e}"
+                    content="Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
                 )
             else:
                 return CodeInterpreterResponse(
@@ -432,8 +396,7 @@ class CodeInterpreterSession:
                 traceback.print_exc()
             if settings.DETAILED_ERROR:
                 return CodeInterpreterResponse(
-                    content="Error in CodeInterpreterSession: "
-                    f"{e.__class__.__name__}  - {e}"
+                    content="Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
                 )
             else:
                 return CodeInterpreterResponse(

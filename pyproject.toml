@@ -71,10 +71,15 @@ allow-direct-references = true
 addopts = "-p no:warnings"
 
 [tool.isort]
+ensure_newline_before_comments = true
 force_grid_wrap = 0
 include_trailing_comma = true
 line_length = 120
 multi_line_output = 3
+skip_gitignore = true
+use_parentheses = true
+# you can skip files as below
+#skip_glob = docs/conf.py
 
 [tool.flake8]
 max-line-length = 120
@@ -87,3 +92,29 @@ ignore_missing_imports = true
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+[tool.pylint.messages_control]
+disable = [
+  "global-statement",
+  "missing-docstring",
+]
+
+[tool.black]
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+include = '\.pyi?$'
+line-length = 120
+skip-string-normalization = true
+target-version = ['py36', 'py37', 'py38', 'py39']

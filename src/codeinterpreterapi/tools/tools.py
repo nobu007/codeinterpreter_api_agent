@@ -1,31 +1,22 @@
+from langchain.agents.tools import Tool
+from langchain_community.tools.shell.tool import ShellInput
+from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.tools import BaseTool, StructuredTool
+
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.schema import CodeInput
-from langchain_community.tools.shell.tool import ShellInput
-from langchain_experimental.plan_and_execute.agent_executor import (
-    PlanAndExecute,
-)
-from langchain.agents.tools import Tool
-from langchain_community.tools.tavily_search import TavilySearchResults
 
 
 class CodeInterpreterTools:
-
     @staticmethod
-    def get_all(
-        additional_tools: list[BaseTool], run_handler_func, arun_handler_func
-    ) -> list[BaseTool]:
-        additional_tools = CodeInterpreterTools.get_python(
-            additional_tools, run_handler_func, arun_handler_func
-        )
+    def get_all(additional_tools: list[BaseTool], run_handler_func, arun_handler_func) -> list[BaseTool]:
+        additional_tools = CodeInterpreterTools.get_python(additional_tools, run_handler_func, arun_handler_func)
         additional_tools = CodeInterpreterTools.get_shell(additional_tools)
         additional_tools = CodeInterpreterTools.get_web_search(additional_tools)
         return additional_tools
 
     @staticmethod
-    def get_python(
-        additional_tools: list[BaseTool], run_handler_func, arun_handler_func
-    ) -> list[BaseTool]:
+    def get_python(additional_tools: list[BaseTool], run_handler_func, arun_handler_func) -> list[BaseTool]:
         return additional_tools + [
             StructuredTool(
                 name="python",
@@ -37,10 +28,7 @@ class CodeInterpreterTools:
                 "For example, do 'import numpy', not '\\nimport numpy'."
                 "Variables are preserved between runs. "
                 + (
-                    (
-                        "You can use all default python packages "
-                        f"specifically also these: {settings.CUSTOM_PACKAGES}"
-                    )
+                    ("You can use all default python packages " f"specifically also these: {settings.CUSTOM_PACKAGES}")
                     if settings.CUSTOM_PACKAGES
                     else ""
                 ),  # TODO: or include this in the system message

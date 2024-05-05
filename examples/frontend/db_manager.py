@@ -97,14 +97,10 @@ class DBManager:
         return self.cursor.lastrowid
 
     def get_chat_messages(self, chat_id):
-        return self.fetch_query(
-            "SELECT * FROM chat_messages " "WHERE chat_id = ?", (chat_id,)
-        )
+        return self.fetch_query("SELECT * FROM chat_messages " "WHERE chat_id = ?", (chat_id,))
 
     def get_chat_message(self, chat_message_id):
-        return self.fetch_query(
-            "SELECT * FROM chat_messages WHERE id = ?", (chat_message_id,)
-        )[0]
+        return self.fetch_query("SELECT * FROM chat_messages WHERE id = ?", (chat_message_id,))[0]
 
     # File Operations
     def save_file(self, chat_message_id, name, content):

@@ -1,6 +1,6 @@
 import asyncio
-from invoke import task
-from invoke import Context
+
+from invoke import Context, task
 
 
 @task

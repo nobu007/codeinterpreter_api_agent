@@ -1,11 +1,9 @@
 from langchain.chat_models.base import BaseChatModel
 
-
 from codeinterpreterapi.config import settings
 
 
 class CodeInterpreterLlm:
-
     @classmethod
     def get_llm(self) -> BaseChatModel:
         if (
