@@ -1,4 +1,4 @@
-from langchain_community.tools.shell.tool import ShellInput
+from langchain_community.tools.shell.tool import ShellTool
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.tools import BaseTool, StructuredTool
 
@@ -39,9 +39,8 @@ class CodeInterpreterTools:
 
     @staticmethod
     def get_shell(additional_tools: list[BaseTool]) -> list[BaseTool]:
-        # TODO: use ShellInput
-        # tools = [ShellInput()]
-        return additional_tools
+        tools = [ShellTool()]
+        return additional_tools + tools
 
     @staticmethod
     def get_web_search(additional_tools: list[BaseTool]) -> list[BaseTool]:
