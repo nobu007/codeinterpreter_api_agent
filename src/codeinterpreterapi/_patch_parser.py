@@ -3,15 +3,15 @@ import json
 from json import JSONDecodeError
 from typing import List, Union
 
-from langchain.agents.agent import AgentOutputParser
 from langchain.agents.openai_functions_agent import base
+from langchain_community.output_parsers.rail_parser import GuardrailsOutputParser
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, Generation
 
 
-class OpenAIFunctionsAgentOutputParser(AgentOutputParser):
+class OpenAIFunctionsAgentOutputParser(GuardrailsOutputParser):
     """Parses a message into agent action/finish.
 
     Is meant to be used with OpenAI models, as it relies on the specific
