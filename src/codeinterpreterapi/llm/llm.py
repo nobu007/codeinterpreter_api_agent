@@ -24,15 +24,25 @@ class CodeInterpreterLlm:
                 timeout=settings.REQUEST_TIMEOUT,
             )  # type: ignore
         if settings.OPENAI_API_KEY:
-            from langchain_openai import ChatOpenAI
+            from langchain_openai import ChatGoogleGenerativeAI
 
-            return ChatOpenAI(
+            return ChatGoogleGenerativeAI(
                 model=settings.MODEL,
-                api_key=settings.OPENAI_API_KEY,
+                api_key=settings.GEMINI_API_KEY,
                 timeout=settings.REQUEST_TIMEOUT,
                 temperature=settings.TEMPERATURE,
                 max_retries=settings.MAX_RETRY,
             )  # type: ignore
+        if settings.GEMINI_API_KEY:
+            from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
+
+            if "gemini" not in settings.MODEL:
+                print("Please set the gemini model in the settings.")
+            return ChatGoogleGenerativeAI(
+                model=settings.MODEL,
+                temperature=settings.TEMPERATURE,
+                google_api_key=settings.GEMINI_API_KEY,
+            )
         if settings.ANTHROPIC_API_KEY:
             from langchain_anthropic import ChatAnthropic  # type: ignore
 

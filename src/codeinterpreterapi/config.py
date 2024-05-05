@@ -19,6 +19,7 @@ class CodeInterpreterAPISettings(BaseSettings):
     AZURE_API_BASE: Optional[str] = None
     AZURE_API_VERSION: Optional[str] = None
     AZURE_DEPLOYMENT_NAME: Optional[str] = None
+    GEMINI_API_KEY: Optional[SecretStr] = None
     ANTHROPIC_API_KEY: Optional[SecretStr] = None
 
     # LLM Settings

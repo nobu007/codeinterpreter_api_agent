@@ -6,6 +6,7 @@ from langchain.chat_models.base import BaseChatModel
 from langchain.memory.buffer import ConversationBufferMemory
 from langchain_core.prompts.chat import MessagesPlaceholder
 from langchain_experimental.plan_and_execute import PlanAndExecute, load_agent_executor, load_chat_planner
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 from codeinterpreterapi.config import settings
@@ -25,8 +26,15 @@ class CodeInterpreterAgent:
                 system_message=settings.SYSTEM_MESSAGE,
                 extra_prompt_messages=[MessagesPlaceholder(variable_name="chat_history")],
             )
-        elif isinstance(llm, BaseChatModel):
+        elif isinstance(llm, ChatGoogleGenerativeAI):
             print("choose_agent ConversationalChatAgent(ANTHROPIC)")
+            return ConversationalChatAgent.from_llm_and_tools(
+                llm=llm,
+                tools=tools,
+                system_message=settings.SYSTEM_MESSAGE.content.__str__(),
+            )
+        elif isinstance(llm, ChatGoogleGenerativeAI):
+            print("choose_agent ChatGoogleGenerativeAI(gemini-pro)")
             return ConversationalChatAgent.from_llm_and_tools(
                 llm=llm,
                 tools=tools,
