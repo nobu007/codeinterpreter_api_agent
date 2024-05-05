@@ -18,6 +18,7 @@ from langchain_community.chat_message_histories.redis import RedisChatMessageHis
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import BaseTool
+from langchain_experimental.plan_and_execute.planners.base import LLMPlanner
 
 from codeinterpreterapi.chains import (
     aget_file_modifications,
@@ -31,6 +32,8 @@ from codeinterpreterapi.schema import CodeInterpreterResponse, File, SessionStat
 
 from .agents.agents import CodeInterpreterAgent
 from .llm.llm import CodeInterpreterLlm
+from .planners.planners import CodeInterpreterPlanner
+from .supervisors.supervisors import CodeInterpreterSupervisor, MySupervisorChain
 from .tools.tools import CodeInterpreterTools
 
 
@@ -67,6 +70,8 @@ class CodeInterpreterSession:
 
         self.callbacks = callbacks
         self.agent_executor: Optional[AgentExecutor] = None
+        self.llm_planner: Optional[LLMPlanner] = None
+        self.supervisor: Optional[MySupervisorChain] = None
         self.input_files: list[File] = []
         self.output_files: list[File] = []
         self.code_log: list[tuple[str, str]] = []
@@ -82,20 +87,40 @@ class CodeInterpreterSession:
     def session_id(self) -> Optional[UUID]:
         return self.codebox.session_id
 
+    def initialize(self):
+        self.initialize_agent_executor()
+        self.initialize_llm_planner()
+        self.initialize_supervisor()
+
     def initialize_agent_executor(self):
-        agent_executor = CodeInterpreterAgent.create_agent_and_executor(
+        # self.agent_executor = CodeInterpreterAgent.create_agent_and_executor(
+        #     llm=self.llm,
+        #     tools=self.tools,
+        #     verbose=self.verbose,
+        #     chat_memory=self._history_backend(),
+        #     callbacks=self.callbacks,
+        # )
+        self.agent_executor = CodeInterpreterAgent.create_agent_and_executor_experimental(
             llm=self.llm,
             tools=self.tools,
             verbose=self.verbose,
-            chat_memory=self._history_backend(),
-            callbacks=self.callbacks,
         )
-        return agent_executor
+
+    def initialize_llm_planner(self):
+        self.llm_planner = CodeInterpreterPlanner.choose_planner(
+            llm=self.llm,
+        )
+
+    def initialize_supervisor(self):
+        self.supervisor = CodeInterpreterSupervisor.choose_supervisor(
+            planner=self.llm_planner,
+            executor=self.agent_executor,
+        )
 
     def start(self) -> SessionStatus:
         print("start")
         status = SessionStatus.from_codebox_status(self.codebox.start())
-        self.agent_executor = self.initialize_agent_executor()
+        self.initialize()
         self.codebox.run(
             f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
         )
@@ -104,7 +129,7 @@ class CodeInterpreterSession:
     async def astart(self) -> SessionStatus:
         print("astart")
         status = SessionStatus.from_codebox_status(await self.codebox.astart())
-        self.agent_executor = self.initialize_agent_executor()
+        self.initialize()
         await self.codebox.arun(
             f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
         )
@@ -112,13 +137,14 @@ class CodeInterpreterSession:
 
     def start_local(self) -> SessionStatus:
         print("start_local")
-        self.agent_executor = self.initialize_agent_executor()
+        self.initialize()
         status = SessionStatus(status="started")
         return status
 
     async def astart_local(self) -> SessionStatus:
         print("astart_local")
         status = self.start_local()
+        self.initialize()
         return status
 
     def _history_backend(self) -> BaseChatMessageHistory:
@@ -360,7 +386,12 @@ class CodeInterpreterSession:
             self._input_handler(user_request)
             assert self.agent_executor, "Session not initialized."
             print(user_request.content)
-            response = self.agent_executor.invoke(input=user_request.content)
+
+            # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
+            # response = self.agent_executor.invoke(input=user_request.content)
+            response = self.supervisor.invoke(input=user_request.content)
+            # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
+
             output = response["output"]
             print("agent_executor.invoke output=", output)
             return self._output_handler(output)
@@ -387,7 +418,11 @@ class CodeInterpreterSession:
         try:
             await self._ainput_handler(user_request)
             assert self.agent_executor, "Session not initialized."
+
+            # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             response = await self.agent_executor.ainvoke(input=user_request.content)
+            # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
+
             output = response["output"]
             print("agent_executor.invoke output=", output)
             return await self._aoutput_handler(output)

@@ -5,6 +5,7 @@ from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 from langchain.chat_models.base import BaseChatModel
 from langchain.memory.buffer import ConversationBufferMemory
 from langchain_core.prompts.chat import MessagesPlaceholder
+from langchain_experimental.plan_and_execute import PlanAndExecute, load_agent_executor, load_chat_planner
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 from codeinterpreterapi.config import settings
@@ -12,7 +13,7 @@ from codeinterpreterapi.config import settings
 
 class CodeInterpreterAgent:
     @staticmethod
-    def choose_agent(
+    def choose_single_chat_agent(
         llm,
         tools,
     ) -> BaseSingleActionAgent:
@@ -42,12 +43,12 @@ class CodeInterpreterAgent:
     @staticmethod
     def create_agent_and_executor(llm, tools, verbose, chat_memory, callbacks) -> AgentExecutor:
         # agent
-        agent = CodeInterpreterAgent.choose_agent(llm, tools)
+        agent = CodeInterpreterAgent.choose_single_chat_agent(llm, tools)
         print("create_agent_and_executor agent=", str(type(agent)))
         # pprint.pprint(agent)
 
         # agent_executor
-        agent_executor = AgentExecutor.from_agent_and_tools(
+        agent_executor = load_agent_executor(
             agent=agent,
             max_iterations=settings.MAX_ITERATIONS,
             tools=tools,
@@ -62,5 +63,16 @@ class CodeInterpreterAgent:
         print("create_agent_and_executor agent_executor tools:")
         for tool in agent_executor.tools:
             pprint.pprint(tool)
+
+        return agent_executor
+
+    @staticmethod
+    def create_agent_and_executor_experimental(llm, tools, verbose) -> AgentExecutor:
+        # agent
+        agent = CodeInterpreterAgent.choose_single_chat_agent(llm, tools)
+        print("create_agent_and_executor agent=", str(type(agent)))
+
+        # agent_executor
+        agent_executor = load_agent_executor(llm, tools, verbose=verbose)
 
         return agent_executor

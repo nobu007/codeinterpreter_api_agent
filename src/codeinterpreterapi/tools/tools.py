@@ -1,4 +1,3 @@
-from langchain.agents.tools import Tool
 from langchain_community.tools.shell.tool import ShellInput
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.tools import BaseTool, StructuredTool

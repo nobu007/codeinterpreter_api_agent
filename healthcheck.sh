@@ -12,7 +12,7 @@ APP_START_PY="/app/server.py"
 if ! pgrep -f "python ${APP_START_PY}" >/dev/null; then
     log "${APP_START_PY} is not running. Starting it now..."
     # open_interpreterを起動
-    if bash -c "eval $(pyenv init -) && python ${APP_START_PY} >> $LOG_FILE  2>&1" & then
+    if bash -c "eval $(pyenv init -) && python ${APP_START_PY} 2>&1 | tee $LOG_FILE" & then
         log "${APP_START_PY} started successfully."
         sleep 3600
         exit 0
