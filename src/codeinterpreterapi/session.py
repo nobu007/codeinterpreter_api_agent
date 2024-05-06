@@ -10,6 +10,15 @@ from uuid import UUID, uuid4
 
 from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxOutput  # type: ignore
+from gui_agent_loop_core.schema.schema import (
+    GuiAgentInterpreterChatMessage,
+    GuiAgentInterpreterChatMessageList,
+    GuiAgentInterpreterChatResponse,
+    GuiAgentInterpreterChatResponseGenerator,
+    GuiAgentInterpreterChatResponseStr,
+    GuiAgentInterpreterManagerBase,
+    InterpreterState,
+)
 from langchain.agents import AgentExecutor
 from langchain.callbacks.base import Callbacks
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
@@ -391,22 +400,33 @@ class CodeInterpreterSession:
             # response = self.agent_executor.invoke(input=user_request.content)
             response = self.supervisor.invoke(input=user_request.content)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
+            print("response(type)=", type(response))
+            print("response=", response)
 
             output = response["output"]
-            print("agent_executor.invoke output=", output)
-            return self._output_handler(output)
+            print("generate_response agent_executor.invoke output=", output)
+            inner_response = self._output_handler(output)
+            final_response = GuiAgentInterpreterChatResponse()
+            final_response.content = str(inner_response)
+            return final_response
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
             if settings.DETAILED_ERROR:
-                return CodeInterpreterResponse(
-                    content="Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
+                inner_response = CodeInterpreterResponse(
+                    content="Error in CodeInterpreterSession(generate_response): " f"{e.__class__.__name__}  - {e}"
                 )
+                final_response = GuiAgentInterpreterChatResponse()
+                final_response.content = str(inner_response)
+                return final_response
             else:
-                return CodeInterpreterResponse(
+                inner_response = CodeInterpreterResponse(
                     content="Sorry, something went while generating your response."
                     "Please try again or restart the session."
                 )
+                final_response = GuiAgentInterpreterChatResponse()
+                final_response.content = str(inner_response)
+                return final_response
 
     async def agenerate_response(
         self,
@@ -424,17 +444,92 @@ class CodeInterpreterSession:
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
 
             output = response["output"]
-            print("agent_executor.invoke output=", output)
+            print("agenerate_response agent_executor.ainvoke output=", output)
             return await self._aoutput_handler(output)
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
             if settings.DETAILED_ERROR:
                 return CodeInterpreterResponse(
-                    content="Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
+                    content="Error in CodeInterpreterSession(agenerate_response): " f"{e.__class__.__name__}  - {e}"
                 )
             else:
                 return CodeInterpreterResponse(
+                    content="Sorry, something went while generating your response."
+                    "Please try again or restart the session."
+                )
+
+    def generate_response_stream(
+        self,
+        user_msg: str,
+        files: list[File] = None,
+    ) -> GuiAgentInterpreterChatResponseStr:
+        """Generate a Code Interpreter response based on the user's input."""
+        if files is None:
+            files = []
+        user_request = UserRequest(content=user_msg, files=files)
+        try:
+            self._input_handler(user_request)
+            assert self.agent_executor, "Session not initialized."
+            print("llm stream start")
+            # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
+            response = self.agent_executor.stream(input=user_request.content)
+            # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
+            print("llm stream response(type)=", type(response))
+            print("llm stream response=", response)
+
+            full_output = ""
+            for chunk in response:
+                yield chunk
+                full_output += chunk["output"]
+
+            print("generate_response_stream agent_executor.stream full_output=", full_output)
+            self._aoutput_handler(full_output)
+        except Exception as e:
+            if self.verbose:
+                traceback.print_exc()
+            if settings.DETAILED_ERROR:
+                yield "Error in CodeInterpreterSession(generate_response_stream): " f"{e.__class__.__name__}  - {e}"
+            else:
+                yield "Sorry, something went while generating your response." + "Please try again or restart the session."
+
+    async def agenerate_response_stream(
+        self,
+        user_msg: str,
+        files: list[File] = None,
+    ) -> CodeInterpreterResponse:
+        """Generate a Code Interpreter response based on the user's input."""
+        if files is None:
+            files = []
+        user_request = UserRequest(content=user_msg, files=files)
+        try:
+            await self._ainput_handler(user_request)
+            assert self.agent_executor, "Session not initialized."
+
+            print("llm astream start")
+            # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
+            response = self.agent_executor.astream(input=user_request.content)
+            # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
+            print("llm astream response(type)=", type(response))
+            print("llm astream response=", response)
+
+            full_output = ""
+            async for chunk in response:
+                yield chunk
+                full_output += chunk["output"]
+
+            print("agent_executor.astream full_output=", full_output)
+            await self._aoutput_handler(full_output)
+        except Exception as e:
+            if self.verbose:
+                traceback.print_exc()
+            if settings.DETAILED_ERROR:
+                yield CodeInterpreterResponse(
+                    content="Error in CodeInterpreterSession(agenerate_response_stream): "
+                    f"{e.__class__.__name__}  - {e}"
+                )
+            else:
+                yield CodeInterpreterResponse(
                     content="Sorry, something went while generating your response."
                     "Please try again or restart the session."
                 )
