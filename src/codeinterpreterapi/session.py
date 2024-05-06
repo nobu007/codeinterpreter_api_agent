@@ -371,7 +371,7 @@ class CodeInterpreterSession:
         self.code_log = []
 
         response = CodeInterpreterResponse(content=final_response, files=output_files, code_log=code_log)
-        return response.output
+        return response
 
     def generate_response_sync(
         self,
@@ -394,39 +394,31 @@ class CodeInterpreterSession:
         try:
             self._input_handler(user_request)
             assert self.agent_executor, "Session not initialized."
-            print(user_request.content)
+            print("user_request.content=", user_request.content)
 
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             # response = self.agent_executor.invoke(input=user_request.content)
-            response = self.supervisor.invoke(input=user_request.content)
+            response = self.supervisor.invoke(input=user_request, verbose=True)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("response(type)=", type(response))
             print("response=", response)
 
             output = response["output"]
             print("generate_response agent_executor.invoke output=", output)
-            inner_response = self._output_handler(output)
-            final_response = GuiAgentInterpreterChatResponse()
-            final_response.content = str(inner_response)
-            return final_response
+            return self._output_handler(output)
+            # return output
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
             if settings.DETAILED_ERROR:
-                inner_response = CodeInterpreterResponse(
-                    content="Error in CodeInterpreterSession(generate_response): " f"{e.__class__.__name__}  - {e}"
+                return CodeInterpreterResponse(
+                    content="Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
                 )
-                final_response = GuiAgentInterpreterChatResponse()
-                final_response.content = str(inner_response)
-                return final_response
             else:
-                inner_response = CodeInterpreterResponse(
+                return CodeInterpreterResponse(
                     content="Sorry, something went while generating your response."
                     "Please try again or restart the session."
                 )
-                final_response = GuiAgentInterpreterChatResponse()
-                final_response.content = str(inner_response)
-                return final_response
 
     async def agenerate_response(
         self,
