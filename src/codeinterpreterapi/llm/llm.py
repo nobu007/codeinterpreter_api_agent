@@ -5,7 +5,8 @@ from codeinterpreterapi.config import settings
 
 class CodeInterpreterLlm:
     @classmethod
-    def get_llm(self) -> BaseChatModel:
+    def get_llm(cls) -> BaseChatModel:
+        model = settings.MODEL
         if (
             settings.AZURE_OPENAI_API_KEY
             and settings.AZURE_API_BASE
@@ -27,29 +28,29 @@ class CodeInterpreterLlm:
             from langchain_openai import ChatGoogleGenerativeAI
 
             return ChatGoogleGenerativeAI(
-                model=settings.MODEL,
+                model=model,
                 api_key=settings.GEMINI_API_KEY,
                 timeout=settings.REQUEST_TIMEOUT,
                 temperature=settings.TEMPERATURE,
                 max_retries=settings.MAX_RETRY,
             )  # type: ignore
-        if settings.GEMINI_API_KEY:
+        if settings.GEMINI_API_KEY and "gemini" in model:
             from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
 
-            if "gemini" not in settings.MODEL:
+            if "gemini" not in model:
                 print("Please set the gemini model in the settings.")
             return ChatGoogleGenerativeAI(
-                model=settings.MODEL,
+                model=model,
                 temperature=settings.TEMPERATURE,
                 google_api_key=settings.GEMINI_API_KEY,
             )
-        if settings.ANTHROPIC_API_KEY:
+        if settings.ANTHROPIC_API_KEY and "claude" in model:
             from langchain_anthropic import ChatAnthropic  # type: ignore
 
-            if "claude" not in settings.MODEL:
+            if "claude" not in model:
                 print("Please set the claude model in the settings.")
             return ChatAnthropic(
-                model_name=settings.MODEL,
+                model_name=model,
                 temperature=settings.TEMPERATURE,
                 anthropic_api_key=settings.ANTHROPIC_API_KEY,
             )
