@@ -1,5 +1,3 @@
-import traceback
-
 from gui_agent_loop_core.connector_impl.core_to_agent.connector_impl_codeinterpreter_api import (
     ConnectorImplCodeinterpreterApi,
 )
@@ -10,8 +8,9 @@ from gui_agent_loop_core.schema.schema import (
     GuiAgentInterpreterChatResponse,
     GuiAgentInterpreterChatResponseAny,
 )
+from langchain_core.messages import SystemMessage
 
-from codeinterpreterapi import CodeInterpreterSession
+from codeinterpreterapi import CodeInterpreterSession, settings
 
 
 class CodeInterpreter(ConnectorImplCodeinterpreterApi):

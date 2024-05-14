@@ -62,10 +62,12 @@ class CodeInterpreterSession:
         additional_tools: list[BaseTool] = [],
         callbacks: Callbacks = None,
         is_local: bool = True,
+        is_ja: bool = True,
         **kwargs: Any,
     ) -> None:
         _handle_deprecated_kwargs(kwargs)
         self.is_local = is_local
+        self.is_ja = is_ja
         self.codebox = CodeBox(requirements=settings.CUSTOM_PACKAGES)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
         run_handler_func = self._run_handler
@@ -113,17 +115,17 @@ class CodeInterpreterSession:
             llm=self.llm,
             tools=self.tools,
             verbose=self.verbose,
+            is_ja=self.is_ja,
         )
 
     def initialize_llm_planner(self):
-        self.llm_planner = CodeInterpreterPlanner.choose_planner(
-            llm=self.llm,
-        )
+        self.llm_planner = CodeInterpreterPlanner.choose_planner(llm=self.llm, is_ja=self.is_ja)
 
     def initialize_supervisor(self):
         self.supervisor = CodeInterpreterSupervisor.choose_supervisor(
             planner=self.llm_planner,
             executor=self.agent_executor,
+            verbose=self.verbose,
         )
 
     def start(self) -> SessionStatus:
@@ -398,7 +400,7 @@ class CodeInterpreterSession:
 
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             # response = self.agent_executor.invoke(input=user_request.content)
-            response = self.supervisor.invoke(input=user_request, verbose=True)
+            response = self.supervisor.invoke(input=user_request)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("response(type)=", type(response))
             print("response=", response)

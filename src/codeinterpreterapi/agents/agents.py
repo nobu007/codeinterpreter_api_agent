@@ -4,6 +4,7 @@ from langchain.agents import AgentExecutor, BaseSingleActionAgent, Conversationa
 from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 from langchain.chat_models.base import BaseChatModel
 from langchain.memory.buffer import ConversationBufferMemory
+from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts.chat import MessagesPlaceholder
 from langchain_experimental.plan_and_execute import PlanAndExecute, load_agent_executor, load_chat_planner
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -17,35 +18,37 @@ class CodeInterpreterAgent:
     def choose_single_chat_agent(
         llm,
         tools,
+        is_ja,
     ) -> BaseSingleActionAgent:
+        system_message = settings.SYSTEM_MESSAGE if is_ja else settings.SYSTEM_MESSAGE_JA
         if isinstance(llm, ChatOpenAI) or isinstance(llm, AzureChatOpenAI):
             print("choose_agent OpenAIFunctionsAgent")
             return OpenAIFunctionsAgent.from_llm_and_tools(
                 llm=llm,
                 tools=tools,
-                system_message=settings.SYSTEM_MESSAGE,
+                system_message=system_message,
                 extra_prompt_messages=[MessagesPlaceholder(variable_name="chat_history")],
             )
-        elif isinstance(llm, ChatGoogleGenerativeAI):
+        elif isinstance(llm, ChatAnthropic):
             print("choose_agent ConversationalChatAgent(ANTHROPIC)")
             return ConversationalChatAgent.from_llm_and_tools(
                 llm=llm,
                 tools=tools,
-                system_message=settings.SYSTEM_MESSAGE.content.__str__(),
+                system_message=str(system_message.content),
             )
         elif isinstance(llm, ChatGoogleGenerativeAI):
             print("choose_agent ChatGoogleGenerativeAI(gemini-pro)")
             return ConversationalChatAgent.from_llm_and_tools(
                 llm=llm,
                 tools=tools,
-                system_message=settings.SYSTEM_MESSAGE.content.__str__(),
+                system_message=str(system_message.content),
             )
         else:
             print("choose_agent ConversationalAgent(default)")
             return ConversationalAgent.from_llm_and_tools(
                 llm=llm,
                 tools=tools,
-                prefix=settings.SYSTEM_MESSAGE.content.__str__(),
+                prefix=str(system_message.content),
             )
 
     @staticmethod
@@ -75,9 +78,9 @@ class CodeInterpreterAgent:
         return agent_executor
 
     @staticmethod
-    def create_agent_and_executor_experimental(llm, tools, verbose) -> AgentExecutor:
+    def create_agent_and_executor_experimental(llm, tools, verbose, is_ja) -> AgentExecutor:
         # agent
-        agent = CodeInterpreterAgent.choose_single_chat_agent(llm, tools)
+        agent = CodeInterpreterAgent.choose_single_chat_agent(llm, tools, is_ja)
         print("create_agent_and_executor agent=", str(type(agent)))
 
         # agent_executor

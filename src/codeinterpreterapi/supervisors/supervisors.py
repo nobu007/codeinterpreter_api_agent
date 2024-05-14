@@ -10,6 +10,6 @@ class MySupervisorChain(Chain):
 
 class CodeInterpreterSupervisor:
     @staticmethod
-    def choose_supervisor(planner: LLMPlanner, executor: AgentExecutor) -> MySupervisorChain:
-        supervisor = PlanAndExecute(planner=planner, executor=executor, verbose=True)
+    def choose_supervisor(planner: LLMPlanner, executor: AgentExecutor, verbose: bool = False) -> MySupervisorChain:
+        supervisor = PlanAndExecute(planner=planner, executor=executor, verbose=verbose)
         return supervisor

@@ -3,7 +3,7 @@ from typing import Optional
 from langchain_core.messages import SystemMessage
 from langchain_core.pydantic_v1 import BaseSettings, SecretStr
 
-from codeinterpreterapi.prompts import code_interpreter_system_message
+from codeinterpreterapi.prompts import code_interpreter_system_message, code_interpreter_system_message_ja
 
 
 class CodeInterpreterAPISettings(BaseSettings):
@@ -27,6 +27,7 @@ class CodeInterpreterAPISettings(BaseSettings):
     TEMPERATURE: float = 0.03
     DETAILED_ERROR: bool = True
     SYSTEM_MESSAGE: SystemMessage = code_interpreter_system_message
+    SYSTEM_MESSAGE_JA: SystemMessage = code_interpreter_system_message_ja
     REQUEST_TIMEOUT: int = 3 * 60
     MAX_ITERATIONS: int = 12
     MAX_RETRY: int = 3
