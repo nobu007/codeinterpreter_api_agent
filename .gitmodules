@@ -1,3 +1,6 @@
 [submodule "llm_docker_setting_pub"]
 	path = llm_docker_setting_pub
 	url = https://github.com/nobu007/llm_docker_setting_pub.git
+[submodule "GuiAgentLoopCore"]
+	path = GuiAgentLoopCore
+	url = https://github.com/nobu007/GuiAgentLoopCore.git

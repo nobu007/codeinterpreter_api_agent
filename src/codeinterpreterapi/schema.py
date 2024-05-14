@@ -50,11 +50,7 @@ class File(BaseModel):
         try:
             from PIL import Image  # type: ignore
         except ImportError:
-            print(
-                "Please install it with "
-                "`pip install 'codeinterpreterapi[image_support]'`"
-                " to display images."
-            )
+            print("Please install it with " "`pip install 'codeinterpreterapi[image_support]'`" " to display images.")
             exit(1)
 
         from io import BytesIO

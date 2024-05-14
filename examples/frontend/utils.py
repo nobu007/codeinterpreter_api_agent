@@ -4,6 +4,7 @@ import tempfile
 from typing import Optional
 
 import streamlit as st
+
 from codeinterpreterapi import CodeInterpreterSession
 
 
@@ -21,7 +22,7 @@ async def get_images(prompt: str, files: Optional[list] = None) -> list:
     with st.chat_message("user"):  # type: ignore
         st.write(prompt)
     with st.spinner():
-        async with CodeInterpreterSession(model="gpt-3.5-turbo") as session:
+        async with CodeInterpreterSession(model="claude-3-haiku-20240307") as session:
             response = await session.agenerate_response(prompt, files=files)
 
             with st.chat_message("assistant"):  # type: ignore

@@ -1,5 +1,7 @@
 import base64
 import re
+import subprocess
+import tempfile
 import traceback
 from io import BytesIO
 from types import TracebackType
@@ -8,26 +10,24 @@ from uuid import UUID, uuid4
 
 from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxOutput  # type: ignore
-from langchain.agents import (
-    AgentExecutor,
-    BaseSingleActionAgent,
-    ConversationalAgent,
-    ConversationalChatAgent,
+from gui_agent_loop_core.schema.schema import (
+    GuiAgentInterpreterChatMessage,
+    GuiAgentInterpreterChatMessageList,
+    GuiAgentInterpreterChatResponse,
+    GuiAgentInterpreterChatResponseGenerator,
+    GuiAgentInterpreterChatResponseStr,
+    GuiAgentInterpreterManagerBase,
+    InterpreterState,
 )
-from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
+from langchain.agents import AgentExecutor
 from langchain.callbacks.base import Callbacks
-from langchain.chat_models.base import BaseChatModel
-from langchain.memory.buffer import ConversationBufferMemory
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
-from langchain_community.chat_message_histories.postgres import (
-    PostgresChatMessageHistory,
-)
+from langchain_community.chat_message_histories.postgres import PostgresChatMessageHistory
 from langchain_community.chat_message_histories.redis import RedisChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.prompts.chat import MessagesPlaceholder
-from langchain_core.tools import BaseTool, StructuredTool
-from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from langchain_core.tools import BaseTool
+from langchain_experimental.plan_and_execute.planners.base import LLMPlanner
 
 from codeinterpreterapi.chains import (
     aget_file_modifications,
@@ -37,13 +37,13 @@ from codeinterpreterapi.chains import (
 )
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
-from codeinterpreterapi.schema import (
-    CodeInput,
-    CodeInterpreterResponse,
-    File,
-    SessionStatus,
-    UserRequest,
-)
+from codeinterpreterapi.schema import CodeInterpreterResponse, File, SessionStatus, UserRequest
+
+from .agents.agents import CodeInterpreterAgent
+from .llm.llm import CodeInterpreterLlm
+from .planners.planners import CodeInterpreterPlanner
+from .supervisors.supervisors import CodeInterpreterSupervisor, MySupervisorChain
+from .tools.tools import CodeInterpreterTools
 
 
 def _handle_deprecated_kwargs(kwargs: dict) -> None:
@@ -61,15 +61,26 @@ class CodeInterpreterSession:
         llm: Optional[BaseLanguageModel] = None,
         additional_tools: list[BaseTool] = [],
         callbacks: Callbacks = None,
+        is_local: bool = True,
         **kwargs: Any,
     ) -> None:
         _handle_deprecated_kwargs(kwargs)
+        self.is_local = is_local
         self.codebox = CodeBox(requirements=settings.CUSTOM_PACKAGES)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
-        self.tools: list[BaseTool] = self._tools(additional_tools)
-        self.llm: BaseLanguageModel = llm or self._choose_llm()
+        run_handler_func = self._run_handler
+        arun_handler_func = self._arun_handler
+        if self.is_local:
+            run_handler_func = self._run_handler_local
+            arun_handler_func = self._arun_handler_local
+        self.tools: list[BaseTool] = CodeInterpreterTools.get_all(additional_tools, run_handler_func, arun_handler_func)
+        self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
+        self.log("self.llm=" + str(self.llm))
+
         self.callbacks = callbacks
         self.agent_executor: Optional[AgentExecutor] = None
+        self.llm_planner: Optional[LLMPlanner] = None
+        self.supervisor: Optional[MySupervisorChain] = None
         self.input_files: list[File] = []
         self.output_files: list[File] = []
         self.code_log: list[tuple[str, str]] = []
@@ -78,147 +89,92 @@ class CodeInterpreterSession:
     def from_id(cls, session_id: UUID, **kwargs: Any) -> "CodeInterpreterSession":
         session = cls(**kwargs)
         session.codebox = CodeBox.from_id(session_id)
-        session.agent_executor = session._agent_executor()
+        session.agent_executor = CodeInterpreterAgent.create_agent_and_executor()
         return session
 
     @property
     def session_id(self) -> Optional[UUID]:
         return self.codebox.session_id
 
+    def initialize(self):
+        self.initialize_agent_executor()
+        self.initialize_llm_planner()
+        self.initialize_supervisor()
+
+    def initialize_agent_executor(self):
+        # self.agent_executor = CodeInterpreterAgent.create_agent_and_executor(
+        #     llm=self.llm,
+        #     tools=self.tools,
+        #     verbose=self.verbose,
+        #     chat_memory=self._history_backend(),
+        #     callbacks=self.callbacks,
+        # )
+        self.agent_executor = CodeInterpreterAgent.create_agent_and_executor_experimental(
+            llm=self.llm,
+            tools=self.tools,
+            verbose=self.verbose,
+        )
+
+    def initialize_llm_planner(self):
+        self.llm_planner = CodeInterpreterPlanner.choose_planner(
+            llm=self.llm,
+        )
+
+    def initialize_supervisor(self):
+        self.supervisor = CodeInterpreterSupervisor.choose_supervisor(
+            planner=self.llm_planner,
+            executor=self.agent_executor,
+        )
+
     def start(self) -> SessionStatus:
+        print("start")
         status = SessionStatus.from_codebox_status(self.codebox.start())
-        self.agent_executor = self._agent_executor()
+        self.initialize()
         self.codebox.run(
             f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
         )
         return status
 
     async def astart(self) -> SessionStatus:
+        print("astart")
         status = SessionStatus.from_codebox_status(await self.codebox.astart())
-        self.agent_executor = self._agent_executor()
+        self.initialize()
         await self.codebox.arun(
             f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
         )
         return status
 
-    def _tools(self, additional_tools: list[BaseTool]) -> list[BaseTool]:
-        return additional_tools + [
-            StructuredTool(
-                name="python",
-                description="Input a string of code to a ipython interpreter. "
-                "Write the entire code in a single string. This string can "
-                "be really long, so you can use the `;` character to split lines. "
-                "Start your code on the same line as the opening quote. "
-                "Do not start your code with a line break. "
-                "For example, do 'import numpy', not '\\nimport numpy'."
-                "Variables are preserved between runs. "
-                + (
-                    (
-                        "You can use all default python packages "
-                        f"specifically also these: {settings.CUSTOM_PACKAGES}"
-                    )
-                    if settings.CUSTOM_PACKAGES
-                    else ""
-                ),  # TODO: or include this in the system message
-                func=self._run_handler,
-                coroutine=self._arun_handler,
-                args_schema=CodeInput,  # type: ignore
-            ),
-        ]
+    def start_local(self) -> SessionStatus:
+        print("start_local")
+        self.initialize()
+        status = SessionStatus(status="started")
+        return status
 
-    def _choose_llm(self) -> BaseChatModel:
-        if (
-            settings.AZURE_OPENAI_API_KEY
-            and settings.AZURE_API_BASE
-            and settings.AZURE_API_VERSION
-            and settings.AZURE_DEPLOYMENT_NAME
-        ):
-            self.log("Using Azure Chat OpenAI")
-            return AzureChatOpenAI(
-                temperature=0.03,
-                base_url=settings.AZURE_API_BASE,
-                api_version=settings.AZURE_API_VERSION,
-                azure_deployment=settings.AZURE_DEPLOYMENT_NAME,
-                api_key=settings.AZURE_OPENAI_API_KEY,
-                max_retries=settings.MAX_RETRY,
-                timeout=settings.REQUEST_TIMEOUT,
-            )  # type: ignore
-        if settings.OPENAI_API_KEY:
-            from langchain_openai import ChatOpenAI
-
-            return ChatOpenAI(
-                model=settings.MODEL,
-                api_key=settings.OPENAI_API_KEY,
-                timeout=settings.REQUEST_TIMEOUT,
-                temperature=settings.TEMPERATURE,
-                max_retries=settings.MAX_RETRY,
-            )  # type: ignore
-        if settings.ANTHROPIC_API_KEY:
-            from langchain_anthropic import ChatAnthropic  # type: ignore
-
-            if "claude" not in settings.MODEL:
-                print("Please set the claude model in the settings.")
-            self.log("Using Chat Anthropic")
-            return ChatAnthropic(
-                model_name=settings.MODEL,
-                temperature=settings.TEMPERATURE,
-                anthropic_api_key=settings.ANTHROPIC_API_KEY,
-            )
-        raise ValueError("Please set the API key for the LLM you want to use.")
-
-    def _choose_agent(self) -> BaseSingleActionAgent:
-        return (
-            OpenAIFunctionsAgent.from_llm_and_tools(
-                llm=self.llm,
-                tools=self.tools,
-                system_message=settings.SYSTEM_MESSAGE,
-                extra_prompt_messages=[
-                    MessagesPlaceholder(variable_name="chat_history")
-                ],
-            )
-            if isinstance(self.llm, ChatOpenAI) or isinstance(self.llm, AzureChatOpenAI)
-            else ConversationalChatAgent.from_llm_and_tools(
-                llm=self.llm,
-                tools=self.tools,
-                system_message=settings.SYSTEM_MESSAGE.content.__str__(),
-            )
-            if isinstance(self.llm, BaseChatModel)
-            else ConversationalAgent.from_llm_and_tools(
-                llm=self.llm,
-                tools=self.tools,
-                prefix=settings.SYSTEM_MESSAGE.content.__str__(),
-            )
-        )
+    async def astart_local(self) -> SessionStatus:
+        print("astart_local")
+        status = self.start_local()
+        self.initialize()
+        return status
 
     def _history_backend(self) -> BaseChatMessageHistory:
         return (
             CodeBoxChatMessageHistory(codebox=self.codebox)
             if settings.HISTORY_BACKEND == "codebox"
-            else RedisChatMessageHistory(
-                session_id=str(self.session_id),
-                url=settings.REDIS_URL,
+            else (
+                RedisChatMessageHistory(
+                    session_id=str(self.session_id),
+                    url=settings.REDIS_URL,
+                )
+                if settings.HISTORY_BACKEND == "redis"
+                else (
+                    PostgresChatMessageHistory(
+                        session_id=str(self.session_id),
+                        connection_string=settings.POSTGRES_URL,
+                    )
+                    if settings.HISTORY_BACKEND == "postgres"
+                    else ChatMessageHistory()
+                )
             )
-            if settings.HISTORY_BACKEND == "redis"
-            else PostgresChatMessageHistory(
-                session_id=str(self.session_id),
-                connection_string=settings.POSTGRES_URL,
-            )
-            if settings.HISTORY_BACKEND == "postgres"
-            else ChatMessageHistory()
-        )
-
-    def _agent_executor(self) -> AgentExecutor:
-        return AgentExecutor.from_agent_and_tools(
-            agent=self._choose_agent(),
-            max_iterations=settings.MAX_ITERATIONS,
-            tools=self.tools,
-            verbose=self.verbose,
-            memory=ConversationBufferMemory(
-                memory_key="chat_history",
-                return_messages=True,
-                chat_memory=self._history_backend(),
-            ),
-            callbacks=self.callbacks,
         )
 
     def show_code(self, code: str) -> None:
@@ -229,6 +185,34 @@ class CodeInterpreterSession:
         """Callback function to show code to the user."""
         if self.verbose:
             print(code)
+
+    def _get_handler_local_command(self, code: str):
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".py") as temp_file:
+            temp_file.write(code)
+            temp_file_path = temp_file.name
+
+            command = f"cd src/codeinterpreterapi/invoke_tasks && invoke -c python run-code-file '{temp_file_path}'"
+            return command
+
+    def _run_handler_local(self, code: str):
+        command = self._get_handler_local_command(code)
+        try:
+            output_content = subprocess.check_output(command, shell=True, universal_newlines=True)
+            self.code_log.append((code, output_content))
+            return output_content
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred: {e}")
+            return None
+
+    async def _arun_handler_local(self, code: str):
+        command = self._get_handler_local_command(code)
+        try:
+            output_content = await subprocess.check_output(command, shell=True, universal_newlines=True)
+            self.code_log.append((code, output_content))
+            return output_content
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred: {e}")
+            return None
 
     def _run_handler(self, code: str) -> str:
         """Run code in container and send the output to the user"""
@@ -253,10 +237,7 @@ class CodeInterpreterSession:
                     output.content,
                 ):
                     self.codebox.install(package.group(1))
-                    return (
-                        f"{package.group(1)} was missing but "
-                        "got installed now. Please try again."
-                    )
+                    return f"{package.group(1)} was missing but " "got installed now. Please try again."
             else:
                 # TODO: pre-analyze error to optimize next code generation
                 pass
@@ -272,9 +253,7 @@ class CodeInterpreterSession:
                     continue
                 file_buffer = BytesIO(fileb.content)
                 file_buffer.name = filename
-                self.output_files.append(
-                    File(name=filename, content=file_buffer.read())
-                )
+                self.output_files.append(File(name=filename, content=file_buffer.read()))
 
         return output.content
 
@@ -301,10 +280,7 @@ class CodeInterpreterSession:
                     output.content,
                 ):
                     await self.codebox.ainstall(package.group(1))
-                    return (
-                        f"{package.group(1)} was missing but "
-                        "got installed now. Please try again."
-                    )
+                    return f"{package.group(1)} was missing but " "got installed now. Please try again."
             else:
                 # TODO: pre-analyze error to optimize next code generation
                 pass
@@ -320,9 +296,7 @@ class CodeInterpreterSession:
                     continue
                 file_buffer = BytesIO(fileb.content)
                 file_buffer.name = filename
-                self.output_files.append(
-                    File(name=filename, content=file_buffer.read())
-                )
+                self.output_files.append(File(name=filename, content=file_buffer.read()))
 
         return output.content
 
@@ -331,9 +305,7 @@ class CodeInterpreterSession:
         if not request.files:
             return
         if not request.content:
-            request.content = (
-                "I uploaded, just text me back and confirm that you got the file(s)."
-            )
+            request.content = "I uploaded, just text me back and confirm that you got the file(s)."
         assert isinstance(request.content, str), "TODO: implement image support"
         request.content += "\n**The user uploaded the following files: **\n"
         for file in request.files:
@@ -348,9 +320,7 @@ class CodeInterpreterSession:
         if not request.files:
             return
         if not request.content:
-            request.content = (
-                "I uploaded, just text me back and confirm that you got the file(s)."
-            )
+            request.content = "I uploaded, just text me back and confirm that you got the file(s)."
         assert isinstance(request.content, str), "TODO: implement image support"
         request.content += "\n**The user uploaded the following files: **\n"
         for file in request.files:
@@ -378,9 +348,8 @@ class CodeInterpreterSession:
         self.output_files = []
         self.code_log = []
 
-        return CodeInterpreterResponse(
-            content=final_response, files=output_files, code_log=code_log
-        )
+        response = CodeInterpreterResponse(content=final_response, files=output_files, code_log=code_log)
+        return response
 
     async def _aoutput_handler(self, final_response: str) -> CodeInterpreterResponse:
         """Embed images in the response"""
@@ -401,9 +370,8 @@ class CodeInterpreterSession:
         self.output_files = []
         self.code_log = []
 
-        return CodeInterpreterResponse(
-            content=final_response, files=output_files, code_log=code_log
-        )
+        response = CodeInterpreterResponse(content=final_response, files=output_files, code_log=code_log)
+        return response
 
     def generate_response_sync(
         self,
@@ -426,15 +394,25 @@ class CodeInterpreterSession:
         try:
             self._input_handler(user_request)
             assert self.agent_executor, "Session not initialized."
-            response = self.agent_executor.run(input=user_request.content)
-            return self._output_handler(response)
+            print("user_request.content=", user_request.content)
+
+            # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
+            # response = self.agent_executor.invoke(input=user_request.content)
+            response = self.supervisor.invoke(input=user_request, verbose=True)
+            # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
+            print("response(type)=", type(response))
+            print("response=", response)
+
+            output = response["output"]
+            print("generate_response agent_executor.invoke output=", output)
+            return self._output_handler(output)
+            # return output
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
             if settings.DETAILED_ERROR:
                 return CodeInterpreterResponse(
-                    content="Error in CodeInterpreterSession: "
-                    f"{e.__class__.__name__}  - {e}"
+                    content="Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
                 )
             else:
                 return CodeInterpreterResponse(
@@ -452,18 +430,98 @@ class CodeInterpreterSession:
         try:
             await self._ainput_handler(user_request)
             assert self.agent_executor, "Session not initialized."
-            response = await self.agent_executor.arun(input=user_request.content)
-            return await self._aoutput_handler(response)
+
+            # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
+            response = await self.agent_executor.ainvoke(input=user_request.content)
+            # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
+
+            output = response["output"]
+            print("agenerate_response agent_executor.ainvoke output=", output)
+            return await self._aoutput_handler(output)
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
             if settings.DETAILED_ERROR:
                 return CodeInterpreterResponse(
-                    content="Error in CodeInterpreterSession: "
-                    f"{e.__class__.__name__}  - {e}"
+                    content="Error in CodeInterpreterSession(agenerate_response): " f"{e.__class__.__name__}  - {e}"
                 )
             else:
                 return CodeInterpreterResponse(
+                    content="Sorry, something went while generating your response."
+                    "Please try again or restart the session."
+                )
+
+    def generate_response_stream(
+        self,
+        user_msg: str,
+        files: list[File] = None,
+    ) -> GuiAgentInterpreterChatResponseStr:
+        """Generate a Code Interpreter response based on the user's input."""
+        if files is None:
+            files = []
+        user_request = UserRequest(content=user_msg, files=files)
+        try:
+            self._input_handler(user_request)
+            assert self.agent_executor, "Session not initialized."
+            print("llm stream start")
+            # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
+            response = self.agent_executor.stream(input=user_request.content)
+            # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
+            print("llm stream response(type)=", type(response))
+            print("llm stream response=", response)
+
+            full_output = ""
+            for chunk in response:
+                yield chunk
+                full_output += chunk["output"]
+
+            print("generate_response_stream agent_executor.stream full_output=", full_output)
+            self._aoutput_handler(full_output)
+        except Exception as e:
+            if self.verbose:
+                traceback.print_exc()
+            if settings.DETAILED_ERROR:
+                yield "Error in CodeInterpreterSession(generate_response_stream): " f"{e.__class__.__name__}  - {e}"
+            else:
+                yield "Sorry, something went while generating your response." + "Please try again or restart the session."
+
+    async def agenerate_response_stream(
+        self,
+        user_msg: str,
+        files: list[File] = None,
+    ) -> CodeInterpreterResponse:
+        """Generate a Code Interpreter response based on the user's input."""
+        if files is None:
+            files = []
+        user_request = UserRequest(content=user_msg, files=files)
+        try:
+            await self._ainput_handler(user_request)
+            assert self.agent_executor, "Session not initialized."
+
+            print("llm astream start")
+            # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
+            response = self.agent_executor.astream(input=user_request.content)
+            # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
+            print("llm astream response(type)=", type(response))
+            print("llm astream response=", response)
+
+            full_output = ""
+            async for chunk in response:
+                yield chunk
+                full_output += chunk["output"]
+
+            print("agent_executor.astream full_output=", full_output)
+            await self._aoutput_handler(full_output)
+        except Exception as e:
+            if self.verbose:
+                traceback.print_exc()
+            if settings.DETAILED_ERROR:
+                yield CodeInterpreterResponse(
+                    content="Error in CodeInterpreterSession(agenerate_response_stream): "
+                    f"{e.__class__.__name__}  - {e}"
+                )
+            else:
+                yield CodeInterpreterResponse(
                     content="Sorry, something went while generating your response."
                     "Please try again or restart the session."
                 )
@@ -485,7 +543,10 @@ class CodeInterpreterSession:
         return SessionStatus.from_codebox_status(await self.codebox.astop())
 
     def __enter__(self) -> "CodeInterpreterSession":
-        self.start()
+        if self.is_local:
+            self.start_local()
+        else:
+            self.start()
         return self
 
     def __exit__(

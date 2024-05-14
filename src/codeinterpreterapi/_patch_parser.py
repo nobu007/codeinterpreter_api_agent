@@ -3,15 +3,15 @@ import json
 from json import JSONDecodeError
 from typing import List, Union
 
-from langchain.agents.agent import AgentOutputParser
 from langchain.agents.openai_functions_agent import base
+from langchain_community.output_parsers.rail_parser import GuardrailsOutputParser
 from langchain_core.agents import AgentAction, AgentActionMessageLog, AgentFinish
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatGeneration, Generation
 
 
-class OpenAIFunctionsAgentOutputParser(AgentOutputParser):
+class OpenAIFunctionsAgentOutputParser(GuardrailsOutputParser):
     """Parses a message into agent action/finish.
 
     Is meant to be used with OpenAI models, as it relies on the specific
@@ -52,8 +52,7 @@ class OpenAIFunctionsAgentOutputParser(AgentOutputParser):
                     }
                 else:
                     raise OutputParserException(
-                        f"Could not parse tool input: {function_call} because "
-                        f"the `arguments` is not valid JSON."
+                        f"Could not parse tool input: {function_call} because " f"the `arguments` is not valid JSON."
                     )
 
             # HACK HACK HACK:
@@ -76,13 +75,9 @@ class OpenAIFunctionsAgentOutputParser(AgentOutputParser):
                 message_log=[message],
             )
 
-        return AgentFinish(
-            return_values={"output": message.content}, log=str(message.content)
-        )
+        return AgentFinish(return_values={"output": message.content}, log=str(message.content))
 
-    def parse_result(
-        self, result: List[Generation], *, partial: bool = False
-    ) -> Union[AgentAction, AgentFinish]:
+    def parse_result(self, result: List[Generation], *, partial: bool = False) -> Union[AgentAction, AgentFinish]:
         if not isinstance(result[0], ChatGeneration):
             raise ValueError("This output parser only works on ChatGeneration output")
         message = result[0].message
@@ -91,9 +86,7 @@ class OpenAIFunctionsAgentOutputParser(AgentOutputParser):
     async def aparse_result(
         self, result: List[Generation], *, partial: bool = False
     ) -> Union[AgentAction, AgentFinish]:
-        return await asyncio.get_running_loop().run_in_executor(
-            None, self.parse_result, result
-        )
+        return await asyncio.get_running_loop().run_in_executor(None, self.parse_result, result)
 
     def parse(self, text: str) -> Union[AgentAction, AgentFinish]:
         raise ValueError("Can only parse messages")

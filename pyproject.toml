@@ -1,60 +1,68 @@
 [project]
-name = "codeinterpreterapi"
-version = "0.1.17"
-description = "CodeInterpreterAPI is an (unofficial) open source python interface for the ChatGPT CodeInterpreter."
-authors = [{ name = "Shroominic", email = "contact@shroominic.com" }]
-dependencies = [
-    "langchain-openai>=0.1.1",
-    "codeboxapi>=0.1.19",
-    "langchain>=0.1.14",
-    "pyzmq==25.1.2",
+authors = [{name = "Shroominic", email = "contact@shroominic.com"}]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-license = { file = "LICENSE" }
+dependencies = [
+  "langchain-openai>=0.1.1",
+  "codeboxapi>=0.1.19",
+  "langchain>=0.1.14", #TODO: remove
+  "pyzmq==25.1.2",
+  "invoke>=2.2.0",
+  "langchain>=0.1.16",
+  "langchain-anthropic>=0.1.11",
+  "langchain_experimental>=0.0.57",
+  "langchain-google-genai>=1.0.3",
+  "langchain_community>=0.0.34",
+  "langchain_experimental>=0.0.57",
+  "langchain-core>=0.1.46",
+]
+description = "CodeInterpreterAPI is an (unofficial) open source python interface for the ChatGPT CodeInterpreter."
+keywords = [
+  "codeinterpreter",
+  "chatgpt",
+  "codeinterpreterapi",
+  "api",
+  "langchain",
+  "codeboxapi",
+]
+license = {file = "LICENSE"}
+name = "codeinterpreterapi"
 readme = "README.md"
 requires-python = ">= 3.9.7, <3.13"
-keywords = [
-    "codeinterpreter",
-    "chatgpt",
-    "codeinterpreterapi",
-    "api",
-    "langchain",
-    "codeboxapi",
-]
-classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
+version = "0.1.17"
 
 [project.urls]
 Code = "https://github.com/shroominic/codeinterpreter-api"
 Docs = "https://shroominic.github.io/codeinterpreter-api"
 
 [build-system]
-requires = ["hatchling"]
 build-backend = "hatchling.build"
+requires = ["hatchling"]
 
 [tool.rye]
-managed = true
 dev-dependencies = [
-    "ruff",
-    "mypy",
-    "isort",
-    "pytest",
-    "ipython",
-    "pre-commit",
-    "codeinterpreterapi[all]",
-    "mkdocs-material>=9.4",
+  "ruff",
+  "mypy",
+  "isort",
+  "pytest",
+  "ipython",
+  "pre-commit",
+  "codeinterpreterapi[all]",
+  "mkdocs-material>=9.4",
 ]
+managed = true
 
 [project.optional-dependencies]
-localbox = ["codeboxapi[local_support]"]
+all = ["codeboxapi[all]", "codeinterpreterapi[frontend]"]
 frontend = ["streamlit"]
 image_support = ["codeboxapi[image_support]"]
-all = ["codeboxapi[all]", "codeinterpreterapi[frontend]"]
+localbox = ["codeboxapi[local_support]"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -63,19 +71,50 @@ allow-direct-references = true
 addopts = "-p no:warnings"
 
 [tool.isort]
-multi_line_output = 3
-include_trailing_comma = true
+ensure_newline_before_comments = true
 force_grid_wrap = 0
+include_trailing_comma = true
 line_length = 120
+multi_line_output = 3
+skip_gitignore = true
+use_parentheses = true
+# you can skip files as below
+#skip_glob = docs/conf.py
 
 [tool.flake8]
 max-line-length = 120
 
 [tool.mypy]
-ignore_missing_imports = true
-disallow_untyped_defs = true
-disallow_untyped_calls = true
 disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+[tool.pylint.messages_control]
+disable = [
+  "global-statement",
+  "missing-docstring",
+]
+
+[tool.black]
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+include = '\.pyi?$'
+line-length = 120
+skip-string-normalization = true
+target-version = ['py36', 'py37', 'py38', 'py39']

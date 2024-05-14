@@ -4,12 +4,14 @@ that the code interpreter has internet access
 so it can download the bitcoin chart from yahoo finance
 and plot it for you
 """
+
 import csv
 import io
 from typing import Any
 
-from codeinterpreterapi import CodeInterpreterSession
 from langchain_core.tools import BaseTool
+
+from codeinterpreterapi import CodeInterpreterSession
 
 
 class ExampleKnowledgeBaseTool(BaseTool):
@@ -31,12 +33,8 @@ class ExampleKnowledgeBaseTool(BaseTool):
 
 
 async def main() -> None:
-    async with CodeInterpreterSession(
-        additional_tools=[ExampleKnowledgeBaseTool()]
-    ) as session:
-        response = await session.agenerate_response(
-            "Plot chart of company employee salaries"
-        )
+    async with CodeInterpreterSession(additional_tools=[ExampleKnowledgeBaseTool()]) as session:
+        response = await session.agenerate_response("Plot chart of company employee salaries")
 
         response.show()
 

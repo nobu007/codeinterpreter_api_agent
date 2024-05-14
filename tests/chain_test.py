@@ -1,18 +1,18 @@
 from asyncio import run as _await
 
+from langchain_openai import ChatOpenAI
+
 from codeinterpreterapi.chains import (
     aget_file_modifications,
     aremove_download_link,
     get_file_modifications,
     remove_download_link,
 )
-from langchain_openai import ChatOpenAI
 
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI("claude-3-haiku-20240307")
 
 remove_download_link_example = (
-    "I have created the plot to your dataset.\n\n"
-    "Link to the file [here](sandbox:/plot.png)."
+    "I have created the plot to your dataset.\n\n" "Link to the file [here](sandbox:/plot.png)."
 )
 
 base_code = """
