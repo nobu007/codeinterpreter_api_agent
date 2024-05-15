@@ -26,5 +26,6 @@ class CodeInterpreterPlanner:
     @staticmethod
     def choose_planner(llm: BaseLanguageModel, is_ja: bool) -> LLMPlanner:
         system_prompt = SYSTEM_PROMPT_PLANNER_JA if is_ja else SYSTEM_PROMPT_PLANNER
+        print("system_prompt(planner)=", system_prompt)
         planner = load_chat_planner(llm, system_prompt=system_prompt)
         return planner

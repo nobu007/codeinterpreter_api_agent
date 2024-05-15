@@ -2,14 +2,13 @@ import pprint
 
 from langchain.agents import AgentExecutor, BaseSingleActionAgent, ConversationalAgent, ConversationalChatAgent
 from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
-from langchain.chat_models.base import BaseChatModel
 from langchain.memory.buffer import ConversationBufferMemory
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts.chat import MessagesPlaceholder
-from langchain_experimental.plan_and_execute import PlanAndExecute, load_agent_executor, load_chat_planner
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
+from codeinterpreterapi.agents.plan_and_execute.agent_executor import load_agent_executor
 from codeinterpreterapi.config import settings
 
 
