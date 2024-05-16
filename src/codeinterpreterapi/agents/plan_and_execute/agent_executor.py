@@ -1,22 +1,13 @@
 from typing import List, Optional
 
 from langchain.agents.agent import AgentExecutor, AgentOutputParser
-from langchain.agents.structured_chat.base import StructuredChatAgent
+from langchain.agents.structured_chat.base import StructuredChatAgent, create_structured_chat_agent
 from langchain.tools import BaseTool
 from langchain_core.callbacks import BaseCallbackManager
 from langchain_core.language_models import BaseLanguageModel
 from langchain_experimental.plan_and_execute.executors.base import ChainExecutor
 
-from codeinterpreterapi.agents.plan_and_execute.prompts import (
-    FORMAT_INSTRUCTIONS,
-    FORMAT_INSTRUCTIONS_JA,
-    HUMAN_MESSAGE_TEMPLATE,
-    SUFFIX,
-    SUFFIX_JA,
-    TASK_PREFIX,
-    TOOLS_PREFIX,
-    TOOLS_PREFIX_JA,
-)
+from codeinterpreterapi.agents.plan_and_execute.prompts import create_structured_chat_agent_prompt
 
 
 def load_agent_executor(
@@ -40,34 +31,20 @@ def load_agent_executor(
     Returns:
         ChainExecutor
     """
-    input_variables = ["previous_steps", "current_step", "agent_scratchpad"]
-
-    # message_template
-    message_template = ""
-    if include_task_in_prompt:
-        input_variables.append("objective")
-        message_template += TASK_PREFIX
-    message_template += HUMAN_MESSAGE_TEMPLATE
-
-    # format_instructions, tools_prefix, suffix
-    if is_ja:
-        format_instructions = FORMAT_INSTRUCTIONS_JA
-        tools_prefix = TOOLS_PREFIX_JA
-        suffix = SUFFIX_JA
-    else:
-        format_instructions = FORMAT_INSTRUCTIONS
-        tools_prefix = TOOLS_PREFIX
-        suffix = SUFFIX
-    agent = StructuredChatAgent.from_llm_and_tools(
+    input_variables = ["previous_steps", "current_step", "agent_scratchpad", "tools", "tool_names"]
+    print("input_variables=", input_variables)
+    prompt = create_structured_chat_agent_prompt(is_ja)
+    print("prompt=", prompt.get_prompts())
+    agent = create_structured_chat_agent(
         llm=llm,
         tools=tools,
-        callback_manager=callback_manager,
-        output_parser=output_parser,
-        prefix=tools_prefix,
-        suffix=suffix,
-        human_message_template=message_template,
-        format_instructions=format_instructions,
-        input_variables=input_variables,
+        # callback_manager=callback_manager,
+        # output_parser=output_parser,
+        # prefix=tools_prefix,
+        # suffix=suffix,
+        prompt=prompt,
+        # format_instructions=format_instructions,
+        # input_variables=input_variables,
         # memory_prompts = memory_prompts,
     )
     agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=verbose)

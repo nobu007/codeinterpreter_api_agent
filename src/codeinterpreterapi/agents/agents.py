@@ -83,6 +83,6 @@ class CodeInterpreterAgent:
         print("create_agent_and_executor agent=", str(type(agent)))
 
         # agent_executor
-        agent_executor = load_agent_executor(llm, tools, verbose=verbose)
+        agent_executor = load_agent_executor(llm, tools, verbose=verbose, is_ja=is_ja)
 
         return agent_executor

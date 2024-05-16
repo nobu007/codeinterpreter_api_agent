@@ -75,8 +75,10 @@ class CodeInterpreterSession:
         if self.is_local:
             run_handler_func = self._run_handler_local
             arun_handler_func = self._arun_handler_local
-        self.tools: list[BaseTool] = CodeInterpreterTools.get_all(additional_tools, run_handler_func, arun_handler_func)
         self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
+        self.tools: list[BaseTool] = CodeInterpreterTools.get_all(
+            additional_tools, run_handler_func, arun_handler_func, self.llm
+        )
         self.log("self.llm=" + str(self.llm))
 
         self.callbacks = callbacks
