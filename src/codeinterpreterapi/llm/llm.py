@@ -25,11 +25,11 @@ class CodeInterpreterLlm:
                 timeout=settings.REQUEST_TIMEOUT,
             )  # type: ignore
         if settings.OPENAI_API_KEY:
-            from langchain_openai import ChatGoogleGenerativeAI
+            from langchain_openai import ChatOpenAI
 
-            return ChatGoogleGenerativeAI(
+            return ChatOpenAI(
                 model=model,
-                api_key=settings.GEMINI_API_KEY,
+                api_key=settings.OPENAI_API_KEY,
                 timeout=settings.REQUEST_TIMEOUT,
                 temperature=settings.TEMPERATURE,
                 max_retries=settings.MAX_RETRY,
