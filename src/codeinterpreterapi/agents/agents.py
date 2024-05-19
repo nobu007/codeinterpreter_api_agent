@@ -1,7 +1,3 @@
-import getpass
-import os
-import platform
-
 from langchain import hub
 from langchain.agents import (
     AgentExecutor,
@@ -24,19 +20,23 @@ from codeinterpreterapi.config import settings
 class CodeInterpreterAgent:
     @staticmethod
     def create_agent_executor_lcel(llm, tools, verbose=False, chat_memory=None, callbacks=None, is_ja=True) -> Runnable:
-        # agent
+        # prompt
         prompt = hub.pull("hwchase17/openai-functions-agent")
-        username = getpass.getuser()
-        current_working_directory = os.getcwd()
-        operating_system = platform.system()
-        info = f"[User Info]\nName: {username}\nCWD: {current_working_directory}\nOS: {operating_system}"
-        # llm_with_tools = llm.bind_tools(tools)
-        # llm_with_tools_and_info = llm_with_tools.bind({"agent_scratchpad": info})
 
+        # agent
         agent = create_tool_calling_agent(llm, tools, prompt)
+
+        # agent_executor
         agent_executor = AgentExecutor(
             agent=agent,
             tools=tools,
+            verbose=verbose,
+            # memory=ConversationBufferMemory(
+            #     memory_key="chat_history",
+            #     return_messages=True,
+            #     chat_memory=chat_memory,
+            # ),
+            callbacks=callbacks,
         )
         print("agent_executor.input_keys", agent_executor.input_keys)
         print("agent_executor.output_keys", agent_executor.output_keys)

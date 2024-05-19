@@ -11,22 +11,15 @@ from uuid import UUID, uuid4
 from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxOutput  # type: ignore
 from gui_agent_loop_core.schema.schema import (
-    GuiAgentInterpreterChatMessage,
-    GuiAgentInterpreterChatMessageList,
-    GuiAgentInterpreterChatResponse,
-    GuiAgentInterpreterChatResponseGenerator,
     GuiAgentInterpreterChatResponseStr,
-    GuiAgentInterpreterManagerBase,
-    InterpreterState,
 )
-from langchain.agents import AgentExecutor
 from langchain.callbacks.base import Callbacks
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 from langchain_community.chat_message_histories.postgres import PostgresChatMessageHistory
 from langchain_community.chat_message_histories.redis import RedisChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.runnables import Runnable, RunnablePassthrough
+from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.chains import (
@@ -42,7 +35,7 @@ from codeinterpreterapi.schema import CodeInterpreterResponse, File, SessionStat
 from .agents.agents import CodeInterpreterAgent
 from .llm.llm import CodeInterpreterLlm
 from .planners.planners import CodeInterpreterPlanner
-from .supervisors.supervisors import CodeInterpreterSupervisor, MySupervisorChain
+from .supervisors.supervisors import CodeInterpreterSupervisor
 from .tools.tools import CodeInterpreterTools
 
 
@@ -493,7 +486,9 @@ class CodeInterpreterSession:
             if settings.DETAILED_ERROR:
                 yield "Error in CodeInterpreterSession(generate_response_stream): " f"{e.__class__.__name__}  - {e}"
             else:
-                yield "Sorry, something went while generating your response." + "Please try again or restart the session."
+                yield (
+                    "Sorry, something went while generating your response." + "Please try again or restart the session."
+                )
 
     async def agenerate_response_stream(
         self,
