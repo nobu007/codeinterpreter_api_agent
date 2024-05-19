@@ -4,3 +4,6 @@
 [submodule "GuiAgentLoopCore"]
 	path = GuiAgentLoopCore
 	url = https://github.com/nobu007/GuiAgentLoopCore.git
+[submodule "langchain-google"]
+	path = langchain-google
+	url = https://github.com/nobu007/langchain-google.git
