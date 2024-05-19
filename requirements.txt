@@ -3,3 +3,5 @@ invoke
 langchain_anthropic
 langchain_community
 langchain_experimental
+langchainhub
+langsmith

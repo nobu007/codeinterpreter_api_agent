@@ -47,5 +47,7 @@ def load_agent_executor(
         # input_variables=input_variables,
         # memory_prompts = memory_prompts,
     )
+
     agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=verbose)
-    return ChainExecutor(chain=agent_executor)
+    return agent_executor
+    # return ChainExecutor(chain=agent_executor, verbose=verbose)

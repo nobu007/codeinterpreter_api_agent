@@ -1,10 +1,19 @@
-import pprint
+import getpass
+import os
+import platform
 
-from langchain.agents import AgentExecutor, BaseSingleActionAgent, ConversationalAgent, ConversationalChatAgent
+from langchain import hub
+from langchain.agents import (
+    AgentExecutor,
+    BaseSingleActionAgent,
+    ConversationalAgent,
+    ConversationalChatAgent,
+    create_tool_calling_agent,
+)
 from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
-from langchain.memory.buffer import ConversationBufferMemory
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts.chat import MessagesPlaceholder
+from langchain_core.runnables import Runnable
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
@@ -13,6 +22,26 @@ from codeinterpreterapi.config import settings
 
 
 class CodeInterpreterAgent:
+    @staticmethod
+    def create_agent_executor_lcel(llm, tools, verbose=False, chat_memory=None, callbacks=None, is_ja=True) -> Runnable:
+        # agent
+        prompt = hub.pull("hwchase17/openai-functions-agent")
+        username = getpass.getuser()
+        current_working_directory = os.getcwd()
+        operating_system = platform.system()
+        info = f"[User Info]\nName: {username}\nCWD: {current_working_directory}\nOS: {operating_system}"
+        # llm_with_tools = llm.bind_tools(tools)
+        # llm_with_tools_and_info = llm_with_tools.bind({"agent_scratchpad": info})
+
+        agent = create_tool_calling_agent(llm, tools, prompt)
+        agent_executor = AgentExecutor(
+            agent=agent,
+            tools=tools,
+        )
+        print("agent_executor.input_keys", agent_executor.input_keys)
+        print("agent_executor.output_keys", agent_executor.output_keys)
+        return agent_executor
+
     @staticmethod
     def choose_single_chat_agent(
         llm,
@@ -51,30 +80,11 @@ class CodeInterpreterAgent:
             )
 
     @staticmethod
-    def create_agent_and_executor(llm, tools, verbose, chat_memory, callbacks) -> AgentExecutor:
+    def create_agent_and_executor(llm, tools, verbose, chat_memory, callbacks, is_ja=True) -> AgentExecutor:
         # agent
-        agent = CodeInterpreterAgent.choose_single_chat_agent(llm, tools)
+        agent = CodeInterpreterAgent.choose_single_chat_agent(llm, tools, is_ja=is_ja)
         print("create_agent_and_executor agent=", str(type(agent)))
-        # pprint.pprint(agent)
-
-        # agent_executor
-        agent_executor = load_agent_executor(
-            agent=agent,
-            max_iterations=settings.MAX_ITERATIONS,
-            tools=tools,
-            verbose=verbose,
-            memory=ConversationBufferMemory(
-                memory_key="chat_history",
-                return_messages=True,
-                chat_memory=chat_memory,
-            ),
-            callbacks=callbacks,
-        )
-        print("create_agent_and_executor agent_executor tools:")
-        for tool in agent_executor.tools:
-            pprint.pprint(tool)
-
-        return agent_executor
+        return agent
 
     @staticmethod
     def create_agent_and_executor_experimental(llm, tools, verbose, is_ja) -> AgentExecutor:
