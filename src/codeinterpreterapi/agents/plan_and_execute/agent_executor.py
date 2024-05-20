@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from langchain.agents.agent import AgentExecutor, AgentOutputParser
-from langchain.agents.structured_chat.base import StructuredChatAgent, create_structured_chat_agent
+from langchain.agents.structured_chat.base import create_structured_chat_agent
 from langchain.tools import BaseTool
 from langchain_core.callbacks import BaseCallbackManager
 from langchain_core.language_models import BaseLanguageModel

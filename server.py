@@ -2,15 +2,8 @@ from gui_agent_loop_core.connector_impl.core_to_agent.connector_impl_codeinterpr
     ConnectorImplCodeinterpreterApi,
 )
 from gui_agent_loop_core.gui_agent_loop_core import GuiAgentLoopCore
-from gui_agent_loop_core.schema.schema import (
-    GuiAgentInterpreterChatMessage,
-    GuiAgentInterpreterChatMessages,
-    GuiAgentInterpreterChatResponse,
-    GuiAgentInterpreterChatResponseAny,
-)
-from langchain_core.messages import SystemMessage
 
-from codeinterpreterapi import CodeInterpreterSession, settings
+from codeinterpreterapi import CodeInterpreterSession
 
 
 class CodeInterpreter(ConnectorImplCodeinterpreterApi):

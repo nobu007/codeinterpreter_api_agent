@@ -1,8 +1,7 @@
 from langchain_community.tools.shell.tool import BaseTool, ShellTool
 from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_core.language_models import LLM, BaseLanguageModel, BaseLLM
+from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import StructuredTool, Tool
-from langchain_experimental.chat_models.llm_wrapper import ChatWrapper
 from langchain_experimental.llm_bash.base import LLMBashChain
 
 from codeinterpreterapi.config import settings
@@ -65,7 +64,6 @@ class CodeInterpreterTools:
              commands
              field required (type=value_error.missing)
         """
-        llm_runnable = ChatWrapper(llm=llm)
         bash_chain = LLMBashChain.from_llm(llm=llm)
         bash_tool = Tool(
             name="Bash", func=bash_chain.invoke, description="Executes bash commands in a terminal environment."

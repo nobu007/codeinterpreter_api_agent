@@ -1,7 +1,4 @@
-from textwrap import dedent
-
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate
-from langchain_experimental.tot.prompts import JSONListOutputParser
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 SYSTEM_MESSAGE_TEMPLATE = '''Respond to the human as helpfully and accurately as possible. You have access to the following tools:
 
