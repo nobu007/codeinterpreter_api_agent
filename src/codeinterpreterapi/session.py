@@ -10,9 +10,8 @@ from uuid import UUID, uuid4
 
 from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxOutput  # type: ignore
-from gui_agent_loop_core.schema.schema import (
-    GuiAgentInterpreterChatResponseStr,
-)
+from gui_agent_loop_core.schema.schema import GuiAgentInterpreterChatResponseStr
+from langchain.agents import AgentExecutor
 from langchain.callbacks.base import Callbacks
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 from langchain_community.chat_message_histories.postgres import PostgresChatMessageHistory
@@ -77,7 +76,7 @@ class CodeInterpreterSession:
         self.callbacks = callbacks
         self.agent_executor: Optional[Runnable] = None
         self.llm_planner: Optional[Runnable] = None
-        self.supervisor: Optional[Runnable] = None
+        self.supervisor: Optional[AgentExecutor] = None
         self.input_files: list[File] = []
         self.output_files: list[File] = []
         self.code_log: list[tuple[str, str]] = []
@@ -96,7 +95,7 @@ class CodeInterpreterSession:
     def initialize(self):
         self.initialize_agent_executor()
         self.initialize_llm_planner()
-        # self.initialize_supervisor()
+        self.initialize_supervisor()
 
     def initialize_agent_executor(self):
         is_experimental = False
@@ -118,12 +117,13 @@ class CodeInterpreterSession:
             )
 
     def initialize_llm_planner(self):
-        self.llm_planner = CodeInterpreterPlanner.choose_planner(llm=self.llm, is_ja=self.is_ja)
+        self.llm_planner = CodeInterpreterPlanner.choose_planner(llm=self.llm, tools=self.tools, is_ja=self.is_ja)
 
     def initialize_supervisor(self):
         self.supervisor = CodeInterpreterSupervisor.choose_supervisor(
             planner=self.llm_planner,
             executor=self.agent_executor,
+            tools=self.tools,
             verbose=self.verbose,
         )
 
@@ -400,8 +400,9 @@ class CodeInterpreterSession:
             input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
 
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
-            response = self.agent_executor.invoke(input=input_message)
-            # response = self.supervisor.invoke(input=user_request)
+            # response = self.agent_executor.invoke(input=input_message)
+            # response = self.llm_planner.invoke(input=input_message)
+            response = self.supervisor.invoke(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("response(type)=", type(response))
             print("response=", response)

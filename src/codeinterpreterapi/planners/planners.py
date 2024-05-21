@@ -1,6 +1,9 @@
+from typing import List
+
 from langchain import hub
 from langchain.agents import create_react_agent
 from langchain.base_language import BaseLanguageModel
+from langchain.tools import BaseTool
 from langchain_core.runnables import Runnable
 
 SYSTEM_PROMPT_PLANNER = """
@@ -25,7 +28,7 @@ SYSTEM_PROMPT_PLANNER_JA = """
 
 class CodeInterpreterPlanner:
     @staticmethod
-    def choose_planner(llm: BaseLanguageModel, is_ja: bool) -> Runnable:
+    def choose_planner(llm: BaseLanguageModel, tools: List[BaseTool], is_ja: bool) -> Runnable:
         """
         Load a chat planner.
 
@@ -38,6 +41,6 @@ class CodeInterpreterPlanner:
         """
         system_prompt = SYSTEM_PROMPT_PLANNER_JA if is_ja else SYSTEM_PROMPT_PLANNER
         print("system_prompt(planner)=", system_prompt)
-        prompt = hub.pull("nobu/chat_planner")
-        planner_agent = create_react_agent(llm, [], prompt)
+        prompt = hub.pull("nobu/simple_react")
+        planner_agent = create_react_agent(llm, tools, prompt)
         return planner_agent
