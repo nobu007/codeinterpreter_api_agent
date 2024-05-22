@@ -68,9 +68,9 @@ class CodeInterpreterSession:
             run_handler_func = self._run_handler_local
             arun_handler_func = self._arun_handler_local
         self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
-        self.tools: list[BaseTool] = CodeInterpreterTools.get_all(
+        self.tools: list[BaseTool] = CodeInterpreterTools(
             additional_tools, run_handler_func, arun_handler_func, self.llm
-        )
+        ).get_all_tools()
         self.log("self.llm=" + str(self.llm))
 
         self.callbacks = callbacks
@@ -196,6 +196,7 @@ class CodeInterpreterSession:
             return command
 
     def _run_handler_local(self, code: str):
+        print("_run_handler_local code=", code)
         command = self._get_handler_local_command(code)
         try:
             output_content = subprocess.check_output(command, shell=True, universal_newlines=True)
@@ -206,6 +207,7 @@ class CodeInterpreterSession:
             return None
 
     async def _arun_handler_local(self, code: str):
+        print("_arun_handler_local code=", code)
         command = self._get_handler_local_command(code)
         try:
             output_content = await subprocess.check_output(command, shell=True, universal_newlines=True)
