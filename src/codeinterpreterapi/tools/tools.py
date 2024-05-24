@@ -30,11 +30,10 @@ class CodeInterpreterTools:
         tools = [
             StructuredTool(
                 name="python",
-                description="Input a string of code to a ipython interpreter. "
-                "Write the entire code in a single string. This string can "
-                "be really long, so you can use the `;` character to split lines. "
-                "Start your code on the same line as the opening quote. "
-                "Do not start your code with a line break. "
+                description="Input a string of code to a ipython interpreter.\n"
+                "Write the entire code in a single string.\n"
+                "This string can be really long.\n"
+                "Do not start your code with a line break.\n"
                 "For example, do 'import numpy', not '\\nimport numpy'."
                 "Variables are preserved between runs. "
                 + (
@@ -50,12 +49,6 @@ class CodeInterpreterTools:
         self._additional_tools += tools
 
     def add_tools_shell(self) -> None:
-        """
-        ShellTool cause this error. Should not use this.
-        pydantic.v1.error_wrappers.ValidationError: 1 validation error for ShellInput
-             commands
-             field required (type=value_error.missing)
-        """
         shell_tool = ShellTool()
         shell_tool.description = shell_tool.description + f"args {shell_tool.args}".replace("{", "{{").replace(
             "}", "}}"
