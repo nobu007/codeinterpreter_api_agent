@@ -21,6 +21,7 @@ from langchain_core.language_models import BaseLanguageModel
 from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
+from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.chains import (
     aget_file_modifications,
     aremove_download_link,
@@ -29,10 +30,10 @@ from codeinterpreterapi.chains import (
 )
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
+from codeinterpreterapi.llm.llm import CodeInterpreterLlm
 from codeinterpreterapi.schema import CodeInterpreterResponse, File, SessionStatus, UserRequest
+from codeinterpreterapi.thoughts.thoughts import CodeInterpreterToT
 
-from .agents.agents import CodeInterpreterAgent
-from .llm.llm import CodeInterpreterLlm
 from .planners.planners import CodeInterpreterPlanner
 from .supervisors.supervisors import CodeInterpreterSupervisor
 from .tools.tools import CodeInterpreterTools
@@ -77,6 +78,7 @@ class CodeInterpreterSession:
         self.agent_executor: Optional[Runnable] = None
         self.llm_planner: Optional[Runnable] = None
         self.supervisor: Optional[AgentExecutor] = None
+        self.thought: Optional[Runnable] = None
         self.input_files: list[File] = []
         self.output_files: list[File] = []
         self.code_log: list[tuple[str, str]] = []
@@ -96,6 +98,7 @@ class CodeInterpreterSession:
         self.initialize_agent_executor()
         self.initialize_llm_planner()
         self.initialize_supervisor()
+        self.initialize_thought()
 
     def initialize_agent_executor(self):
         is_experimental = False
@@ -126,6 +129,9 @@ class CodeInterpreterSession:
             tools=self.tools,
             verbose=self.verbose,
         )
+
+    def initialize_thought(self):
+        self.thought = CodeInterpreterToT.get_runnable_tot_chain(llm=self.llm)
 
     def start(self) -> SessionStatus:
         print("start")
@@ -404,7 +410,8 @@ class CodeInterpreterSession:
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             # response = self.agent_executor.invoke(input=input_message)
             # response = self.llm_planner.invoke(input=input_message)
-            response = self.supervisor.invoke(input=input_message)
+            # response = self.supervisor.invoke(input=input_message)
+            response = self.thought.invoke(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("response(type)=", type(response))
             print("response=", response)

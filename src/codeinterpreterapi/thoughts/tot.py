@@ -31,7 +31,7 @@ sudoku_problem_description = f"""
 #######
 
 
-class MyChecker(ToTChecker):
+class MyToTChecker(ToTChecker):
     llm: Optional[BaseMemory] = None
     prompt: PromptTemplate = PromptTemplate(
         input_variables=["problem_description", "thoughts"],
@@ -121,8 +121,10 @@ def test_checker():
 #######
 
 
-def create_tot_chain_from_llm(llm):
-    checker = MyChecker()
+def create_tot_chain_from_llm(llm=None):
+    checker = MyToTChecker()
+    if llm is None:
+        llm = prepare_test_llm()
     checker.llm = llm
     tot_chain = ToTChain.from_llm(llm=llm, checker=checker, k=30, c=5, verbose=True, verbose_llm=False)
     return tot_chain
