@@ -163,13 +163,13 @@ def prepare_test_llm():
         model=model,
         temperature=0,
         google_api_key=os.environ.get("GEMINI_API_KEY"),
-        max_output_tokens=1024,
+        max_output_tokens=1024 * 4,
     )
     return llm
 
 
 def test_create():
-    tot_chain = create_tot_chain_from_llm(prepare_test_llm())
+    tot_chain = create_tot_chain_from_llm(llm=prepare_test_llm(), is_simple=True)
     tot_chain.run(problem_description=sudoku_problem_description)
 
 
