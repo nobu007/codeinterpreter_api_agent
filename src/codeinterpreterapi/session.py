@@ -131,7 +131,7 @@ class CodeInterpreterSession:
         )
 
     def initialize_thought(self):
-        self.thought = CodeInterpreterToT.get_runnable_tot_chain(llm=self.llm)
+        self.thought = CodeInterpreterToT.get_runnable_tot_chain(llm=self.llm, is_ja=self.is_ja, is_simple=False)
 
     def start(self) -> SessionStatus:
         print("start")

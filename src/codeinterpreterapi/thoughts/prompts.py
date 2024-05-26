@@ -131,23 +131,20 @@ def get_propose_prompt_ja() -> PromptTemplate:
                 {{ problem_description }}
 
                 {% if thoughts %}
-                VALID THOUGHTS
+                VALID THOUGHTS(思考)
 
                 {% for thought in thoughts %}
                 {{ thought }}
                 {% endfor %}
 
-                Possible next {{ n }} valid thoughts based on the last valid thought:
+                上記の思考を参考にして、次の {{ n }} 個の思考を出力してください。
                 {% else %}
 
-                Possible next {{ n }} valid thoughts based on the PROBLEM:
+                上記の PROBLEM を参考にして、次の {{ n }} 個の思考を出力してください。
+
                 {%- endif -%}
 
-次の思考を生成するために、問題と有効な思考を注意深く分析してください。
-思考は、問題解決に向けた明確なステップや洞察を提供するものでなければなりません。
-各思考は簡潔にまとめ、問題に直接関連するようにしてください。
-思考の質を向上させるために、必要に応じて問題をさらに分析し、追加の情報を検討してください。
-生成された思考のリストを、指定されたJSON形式で出力してください。
+
                 """
         ).strip(),
     )

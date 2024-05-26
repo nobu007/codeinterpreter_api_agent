@@ -2,6 +2,12 @@ import os
 from typing import Optional, Tuple
 
 import spacy
+from codeinterpreterapi.thoughts.thought_generation import (
+    MyProposePromptStrategy,
+    MyProposePromptStrategyJa,
+    MySampleCoTStrategy,
+    MySampleCoTStrategyJa,
+)
 from langchain.prompts import PromptTemplate
 from langchain.schema import BaseMemory
 from langchain_core.output_parsers import StrOutputParser
@@ -121,12 +127,31 @@ def test_checker():
 #######
 
 
-def create_tot_chain_from_llm(llm=None):
+def create_tot_chain_from_llm(llm=None, is_ja=True, is_simple=False):
     checker = MyToTChecker()
     if llm is None:
         llm = prepare_test_llm()
     checker.llm = llm
-    tot_chain = ToTChain.from_llm(llm=llm, checker=checker, k=30, c=5, verbose=True, verbose_llm=False)
+    if is_ja:
+        if is_simple:
+            tot_strategy_class = MySampleCoTStrategyJa
+        else:
+            tot_strategy_class = MyProposePromptStrategyJa
+    else:
+        if is_simple:
+            tot_strategy_class = MySampleCoTStrategy
+        else:
+            tot_strategy_class = MyProposePromptStrategy
+
+    tot_chain = ToTChain.from_llm(
+        llm=llm,
+        checker=checker,
+        k=20,
+        c=3,
+        verbose=True,
+        tot_strategy_class=tot_strategy_class,
+        verbose_llm=False,
+    )
     return tot_chain
 
 
