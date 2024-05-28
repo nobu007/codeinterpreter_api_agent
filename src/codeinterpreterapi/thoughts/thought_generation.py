@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Tuple
 
 from langchain.prompts.base import BasePromptTemplate
 from langchain_core.pydantic_v1 import Field
+from langchain_experimental.tot.checker import ToTChecker
+from langchain_experimental.tot.thought import ThoughtValidity
 from langchain_experimental.tot.thought_generation import ProposePromptStrategy, SampleCoTStrategy
 
 from codeinterpreterapi.thoughts.prompts import (
@@ -106,13 +108,16 @@ class MyProposePromptStrategyJa(ProposePromptStrategy):
 
     prompt: BasePromptTemplate = Field(default_factory=get_propose_prompt_ja)
     tot_memory: Dict[Tuple[str, ...], List[str]] = Field(default_factory=dict)
+    tot_checker: ToTChecker = None  # Checkerを外部から渡すようにする
 
     def next_thought(
         self,
         problem_description: str,
         thoughts_path: Tuple[str, ...] = (),
+        tot_checker: ToTChecker = None,
         **kwargs: Any,
     ) -> str:
+        self.tot_checker = tot_checker
         if thoughts_path not in self.tot_memory or not self.tot_memory[thoughts_path]:
             new_thoughts = self.predict_and_parse(
                 problem_description=problem_description,
@@ -126,5 +131,20 @@ class MyProposePromptStrategyJa(ProposePromptStrategy):
             if isinstance(new_thoughts, list):
                 self.tot_memory[thoughts_path] = new_thoughts[::-1]
             else:
-                return ""
-        return self.tot_memory[thoughts_path].pop()
+                self.tot_memory[thoughts_path] = [new_thoughts]
+
+        return self.evaluate_and_pop_thought(problem_description, thoughts_path)
+
+    def evaluate_and_pop_thought(self, problem_description: str, thoughts_path: Tuple[str, ...]) -> str:
+        while self.tot_memory[thoughts_path]:
+            thought = self.tot_memory[thoughts_path].pop()
+            validity = self.tot_checker.evaluate(problem_description, thoughts_path + (thought,))
+
+            if validity == ThoughtValidity.VALID_FINAL:
+                return thought
+            elif validity == ThoughtValidity.VALID_INTERMEDIATE:
+                return thought
+            else:
+                continue
+
+        return ""

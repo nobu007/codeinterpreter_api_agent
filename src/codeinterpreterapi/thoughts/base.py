@@ -35,12 +35,16 @@ class MyToTChain(ToTChain):
     tot_controller: ToTController = ToTController()
     tot_strategy_class: Type[BaseThoughtGenerationStrategy] = ProposePromptStrategy
     verbose_llm: bool = False
+    thought_generator: BaseThoughtGenerationStrategy = None
 
     class Config:
         """Configuration for this pydantic object."""
 
         extra = Extra.forbid
         arbitrary_types_allowed = True
+
+    def initialize_thought_generator(self):
+        self.thought_generator = self.tot_strategy_class(llm=self.llm, c=self.c, verbose=self.verbose_llm)
 
     @classmethod
     def from_llm(cls, llm: BaseLanguageModel, **kwargs: Any) -> ToTChain:
@@ -96,16 +100,18 @@ class MyToTChain(ToTChain):
         if run_manager:
             run_manager.on_text(text="Starting the ToT solve procedure.\n")
 
+        if self.thought_generator is None:
+            self.initialize_thought_generator()
+
         problem_description = inputs["problem_description"]
         checker_inputs = {"problem_description": problem_description}
         thoughts_path: tuple[str, ...] = ()
-        thought_generator = self.tot_strategy_class(llm=self.llm, c=self.c, verbose=self.verbose_llm)
 
         level = 0
         for _ in range(self.k):
             level = self.tot_memory.level
-            thought_text = thought_generator.next_thought(
-                problem_description, thoughts_path, callbacks=_run_manager.get_child()
+            thought_text = self.thought_generator.next_thought(
+                problem_description, thoughts_path, callbacks=_run_manager.get_child(), tot_checker=self.checker
             )
             checker_inputs["thoughts"] = thoughts_path + (thought_text,)
             thought_validity = self.checker(checker_inputs, callbacks=_run_manager.get_child())["validity"]
