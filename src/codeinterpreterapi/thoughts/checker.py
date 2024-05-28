@@ -1,4 +1,3 @@
-import os
 from typing import Optional, Tuple
 
 import spacy
@@ -9,6 +8,7 @@ from langchain_experimental.tot.checker import ToTChecker
 from langchain_experimental.tot.thought import ThoughtValidity
 from spacy import Language
 
+from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.thoughts.base import MyToTChain
 from codeinterpreterapi.thoughts.thought_generation import (
     MyProposePromptStrategy,
@@ -278,34 +278,6 @@ def create_tot_chain_from_llm(llm=None, is_ja=True, is_simple=False):
         verbose_llm=False,
     )
     return tot_chain
-
-
-def prepare_test_llm():
-    # model = "gemini-1.5-flash-latest"
-    # model = "gemini-1.5-pro-latest"
-    model = "gemini-1.0-pro"
-    # model = "claude-3-haiku-20240307"
-    # model = "claude-3-sonnet-20240229"
-    if "gemini" in model:
-        from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
-
-        llm = ChatGoogleGenerativeAI(
-            model=model,
-            temperature=0.1,
-            google_api_key=os.environ.get("GEMINI_API_KEY"),
-            max_output_tokens=1024 * 4,
-        )
-    else:
-        from langchain_anthropic import ChatAnthropic  # type: ignore
-
-        llm = ChatAnthropic(
-            model_name=model,
-            temperature=0.1,
-            anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"),
-            max_tokens=1024 * 4,
-        )
-
-    return llm
 
 
 def test_create():

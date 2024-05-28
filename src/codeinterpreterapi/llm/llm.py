@@ -1,3 +1,5 @@
+import os
+
 from langchain.chat_models.base import BaseChatModel
 
 from codeinterpreterapi.config import settings
@@ -60,3 +62,31 @@ class CodeInterpreterLlm:
                 max_tokens=max_output_tokens,
             )
         raise ValueError("Please set the API key for the LLM you want to use.")
+
+
+def prepare_test_llm():
+    model = "gemini-1.5-flash-latest"
+    # model = "gemini-1.5-pro-latest"
+    # model = "gemini-1.0-pro"
+    # model = "claude-3-haiku-20240307"
+    # model = "claude-3-sonnet-20240229"
+    if "gemini" in model:
+        from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
+
+        llm = ChatGoogleGenerativeAI(
+            model=model,
+            temperature=0.1,
+            google_api_key=os.environ.get("GEMINI_API_KEY"),
+            max_output_tokens=1024 * 4,
+        )
+    else:
+        from langchain_anthropic import ChatAnthropic  # type: ignore
+
+        llm = ChatAnthropic(
+            model_name=model,
+            temperature=0.1,
+            anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"),
+            max_tokens=1024 * 4,
+        )
+
+    return llm

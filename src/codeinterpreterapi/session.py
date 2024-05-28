@@ -101,7 +101,7 @@ class CodeInterpreterSession:
         self.initialize_thought()
 
     def initialize_agent_executor(self):
-        is_experimental = False
+        is_experimental = True
         if is_experimental:
             self.agent_executor = CodeInterpreterAgent.create_agent_and_executor_experimental(
                 llm=self.llm,
@@ -408,10 +408,10 @@ class CodeInterpreterSession:
             input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
 
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
-            # response = self.agent_executor.invoke(input=input_message)
+            response = self.agent_executor.invoke(input=input_message)
             # response = self.llm_planner.invoke(input=input_message)
             # response = self.supervisor.invoke(input=input_message)
-            response = self.thought.invoke(input=input_message)
+            # response = self.thought.invoke(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("response(type)=", type(response))
             print("response=", response)

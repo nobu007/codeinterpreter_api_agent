@@ -88,11 +88,8 @@ class CodeInterpreterAgent:
 
     @staticmethod
     def create_agent_and_executor_experimental(llm, tools, verbose, is_ja) -> AgentExecutor:
-        # agent
-        agent = CodeInterpreterAgent.choose_single_chat_agent(llm, tools, is_ja)
-        print("create_agent_and_executor agent=", str(type(agent)))
-
         # agent_executor
         agent_executor = load_agent_executor(llm, tools, verbose=verbose, is_ja=is_ja)
+        print("create_agent_and_executor_experimental")
 
         return agent_executor

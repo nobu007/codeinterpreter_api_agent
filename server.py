@@ -8,8 +8,9 @@ from codeinterpreterapi import CodeInterpreterSession
 
 class CodeInterpreter(ConnectorImplCodeinterpreterApi):
     def __init__(self):
-        model = "claude-3-haiku-20240307"
+        # model = "claude-3-haiku-20240307"
         # model = "gemini-1.5-pro-latest"
+        model = "gemini-1.5-flash-latest"
         # model = "gemini-1.0-pro"
         self.session = CodeInterpreterSession(model=model, verbose=True)
         self.status = self.session.start_local()

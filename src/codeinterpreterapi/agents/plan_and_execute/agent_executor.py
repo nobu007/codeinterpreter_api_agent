@@ -5,9 +5,9 @@ from langchain.agents.structured_chat.base import create_structured_chat_agent
 from langchain.tools import BaseTool
 from langchain_core.callbacks import BaseCallbackManager
 from langchain_core.language_models import BaseLanguageModel
-from langchain_experimental.plan_and_execute.executors.base import ChainExecutor
 
 from codeinterpreterapi.agents.plan_and_execute.prompts import create_structured_chat_agent_prompt
+from codeinterpreterapi.llm.llm import prepare_test_llm
 
 
 def load_agent_executor(
@@ -18,7 +18,7 @@ def load_agent_executor(
     verbose: bool = False,
     include_task_in_prompt: bool = False,
     is_ja: str = True,
-) -> ChainExecutor:
+) -> AgentExecutor:
     """
     Load an agent executor.
 
@@ -50,4 +50,15 @@ def load_agent_executor(
 
     agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=verbose)
     return agent_executor
-    # return ChainExecutor(chain=agent_executor, verbose=verbose)
+
+
+def test():
+    llm = prepare_test_llm()
+    agent_executor = load_agent_executor(llm=llm, tools=[])
+    test_input = "pythonで円周率を表示するプログラムを実行してください。"
+    agent_executor_output = agent_executor.invoke({"input": test_input})
+    print("agent_executor_output=", agent_executor_output)
+
+
+if __name__ == "__main__":
+    test()
