@@ -2,7 +2,9 @@ import json
 from typing import List, Optional
 
 from langchain_core.language_models import BaseLanguageModel
+from langchain_core.output_parsers import JsonOutputParser
 
+from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.prompts import determine_modifications_prompt
 
 
@@ -14,12 +16,10 @@ def get_file_modifications(
     if retry < 1:
         return None
 
-    prompt = determine_modifications_prompt.format(code=code)
-
-    result = llm.invoke(prompt)
-
     try:
-        result = json.loads(result.content)
+        result_seq = determine_modifications_prompt | llm | JsonOutputParser()
+        result = result_seq.invoke({"code": code})
+        print("result=", result)
     except json.JSONDecodeError:
         result = ""
     if not result or not isinstance(result, dict) or "modifications" not in result:
@@ -35,12 +35,10 @@ async def aget_file_modifications(
     if retry < 1:
         return None
 
-    prompt = determine_modifications_prompt.format(code=code)
-
-    result = await llm.ainvoke(prompt)
-
     try:
-        result = json.loads(result.content)
+        result_seq = determine_modifications_prompt | llm | JsonOutputParser()
+        result = result_seq.invoke({"code": code})
+        print("result=", result)
     except json.JSONDecodeError:
         result = ""
     if not result or not isinstance(result, dict) or "modifications" not in result:
@@ -49,9 +47,7 @@ async def aget_file_modifications(
 
 
 async def test() -> None:
-    from langchain_openai import ChatOpenAI
-
-    llm = ChatOpenAI()
+    llm = prepare_test_llm()
 
     code = """
         import matplotlib.pyplot as plt
@@ -67,7 +63,8 @@ async def test() -> None:
         plt.show()
         """
 
-    print(get_file_modifications(code, llm))
+    result = get_file_modifications(code, llm)
+    assert result == []  # This is no change for the file system.
 
 
 if __name__ == "__main__":
