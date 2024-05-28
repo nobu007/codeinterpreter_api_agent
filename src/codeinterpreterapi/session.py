@@ -1,15 +1,10 @@
-import base64
 import re
-import subprocess
-import tempfile
 import traceback
-from io import BytesIO
 from types import TracebackType
 from typing import Any, Optional, Type
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from codeboxapi import CodeBox  # type: ignore
-from codeboxapi.schema import CodeBoxOutput  # type: ignore
 from gui_agent_loop_core.schema.schema import GuiAgentInterpreterChatResponseStr
 from langchain.agents import AgentExecutor
 from langchain.callbacks.base import Callbacks
@@ -22,12 +17,7 @@ from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
-from codeinterpreterapi.chains import (
-    aget_file_modifications,
-    aremove_download_link,
-    get_file_modifications,
-    remove_download_link,
-)
+from codeinterpreterapi.chains import aremove_download_link, remove_download_link
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import CodeInterpreterLlm
@@ -63,15 +53,8 @@ class CodeInterpreterSession:
         self.is_ja = is_ja
         self.codebox = CodeBox(requirements=settings.CUSTOM_PACKAGES)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
-        run_handler_func = self._run_handler
-        arun_handler_func = self._arun_handler
-        if self.is_local:
-            run_handler_func = self._run_handler_local
-            arun_handler_func = self._arun_handler_local
         self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
-        self.tools: list[BaseTool] = CodeInterpreterTools(
-            additional_tools, run_handler_func, arun_handler_func, self.llm
-        ).get_all_tools()
+        self.tools: list[BaseTool] = CodeInterpreterTools(additional_tools, self.llm).get_all_tools()
         self.log("self.llm=" + str(self.llm))
 
         self.callbacks = callbacks
@@ -183,131 +166,6 @@ class CodeInterpreterSession:
                 )
             )
         )
-
-    def show_code(self, code: str) -> None:
-        if self.verbose:
-            print(code)
-
-    async def ashow_code(self, code: str) -> None:
-        """Callback function to show code to the user."""
-        if self.verbose:
-            print(code)
-
-    def _get_handler_local_command(self, code: str):
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".py") as temp_file:
-            temp_file.write(code)
-            temp_file_path = temp_file.name
-
-            command = f"cd src/codeinterpreterapi/invoke_tasks && invoke -c python run-code-file '{temp_file_path}'"
-            return command
-
-    def _run_handler_local(self, code: str):
-        print("_run_handler_local code=", code)
-        command = self._get_handler_local_command(code)
-        try:
-            output_content = subprocess.check_output(command, shell=True, universal_newlines=True)
-            self.code_log.append((code, output_content))
-            return output_content
-        except subprocess.CalledProcessError as e:
-            print(f"An error occurred: {e}")
-            return None
-
-    async def _arun_handler_local(self, code: str):
-        print("_arun_handler_local code=", code)
-        command = self._get_handler_local_command(code)
-        try:
-            output_content = await subprocess.check_output(command, shell=True, universal_newlines=True)
-            self.code_log.append((code, output_content))
-            return output_content
-        except subprocess.CalledProcessError as e:
-            print(f"An error occurred: {e}")
-            return None
-
-    def _run_handler(self, code: str) -> str:
-        """Run code in container and send the output to the user"""
-        self.show_code(code)
-        output: CodeBoxOutput = self.codebox.run(code)
-        self.code_log.append((code, output.content))
-
-        if not isinstance(output.content, str):
-            raise TypeError("Expected output.content to be a string.")
-
-        if output.type == "image/png":
-            filename = f"image-{uuid4()}.png"
-            file_buffer = BytesIO(base64.b64decode(output.content))
-            file_buffer.name = filename
-            self.output_files.append(File(name=filename, content=file_buffer.read()))
-            return f"Image {filename} got send to the user."
-
-        elif output.type == "error":
-            if "ModuleNotFoundError" in output.content:
-                if package := re.search(
-                    r"ModuleNotFoundError: No module named '(.*)'",
-                    output.content,
-                ):
-                    self.codebox.install(package.group(1))
-                    return f"{package.group(1)} was missing but " "got installed now. Please try again."
-            else:
-                # TODO: pre-analyze error to optimize next code generation
-                pass
-            if self.verbose:
-                print("Error:", output.content)
-
-        elif modifications := get_file_modifications(code, self.llm):
-            for filename in modifications:
-                if filename in [file.name for file in self.input_files]:
-                    continue
-                fileb = self.codebox.download(filename)
-                if not fileb.content:
-                    continue
-                file_buffer = BytesIO(fileb.content)
-                file_buffer.name = filename
-                self.output_files.append(File(name=filename, content=file_buffer.read()))
-
-        return output.content
-
-    async def _arun_handler(self, code: str) -> str:
-        """Run code in container and send the output to the user"""
-        await self.ashow_code(code)
-        output: CodeBoxOutput = await self.codebox.arun(code)
-        self.code_log.append((code, output.content))
-
-        if not isinstance(output.content, str):
-            raise TypeError("Expected output.content to be a string.")
-
-        if output.type == "image/png":
-            filename = f"image-{uuid4()}.png"
-            file_buffer = BytesIO(base64.b64decode(output.content))
-            file_buffer.name = filename
-            self.output_files.append(File(name=filename, content=file_buffer.read()))
-            return f"Image {filename} got send to the user."
-
-        elif output.type == "error":
-            if "ModuleNotFoundError" in output.content:
-                if package := re.search(
-                    r"ModuleNotFoundError: No module named '(.*)'",
-                    output.content,
-                ):
-                    await self.codebox.ainstall(package.group(1))
-                    return f"{package.group(1)} was missing but " "got installed now. Please try again."
-            else:
-                # TODO: pre-analyze error to optimize next code generation
-                pass
-            if self.verbose:
-                print("Error:", output.content)
-
-        elif modifications := await aget_file_modifications(code, self.llm):
-            for filename in modifications:
-                if filename in [file.name for file in self.input_files]:
-                    continue
-                fileb = await self.codebox.adownload(filename)
-                if not fileb.content:
-                    continue
-                file_buffer = BytesIO(fileb.content)
-                file_buffer.name = filename
-                self.output_files.append(File(name=filename, content=file_buffer.read()))
-
-        return output.content
 
     def _input_handler(self, request: UserRequest) -> None:
         """Callback function to handle user input."""

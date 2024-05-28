@@ -1,52 +1,24 @@
 from langchain_community.tools.shell.tool import BaseTool, ShellTool
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.tools import StructuredTool
 
-from codeinterpreterapi.config import settings
-from codeinterpreterapi.schema import CodeInput
+from codeinterpreterapi.tools.python import PythonTools
 
 
 class CodeInterpreterTools:
     def __init__(
         self,
         additional_tools: list[BaseTool],
-        run_handler_func: callable,
-        arun_handler_func: callable,
         llm: BaseLanguageModel,
     ):
         self._additional_tools = additional_tools
-        self._run_handler_func = run_handler_func
-        self._arun_handler_func = arun_handler_func
         self._llm = llm
 
     def get_all_tools(self) -> list[BaseTool]:
-        self.add_tools_python()
+        self._additional_tools.extend(PythonTools.get_tools_python(self._llm))
         self.add_tools_shell()
         self.add_tools_web_search()
         return self._additional_tools
-
-    def add_tools_python(self) -> None:
-        tools = [
-            StructuredTool(
-                name="python",
-                description="Input a string of code to a ipython interpreter.\n"
-                "Write the entire code in a single string.\n"
-                "This string can be really long.\n"
-                "Do not start your code with a line break.\n"
-                "For example, do 'import numpy', not '\\nimport numpy'."
-                "Variables are preserved between runs. "
-                + (
-                    ("You can use all default python packages " f"specifically also these: {settings.CUSTOM_PACKAGES}")
-                    if settings.CUSTOM_PACKAGES
-                    else ""
-                ),  # TODO: or include this in the system message
-                func=self._run_handler_func,
-                coroutine=self._arun_handler_func,
-                args_schema=CodeInput,  # type: ignore
-            ),
-        ]
-        self._additional_tools += tools
 
     def add_tools_shell(self) -> None:
         shell_tool = ShellTool()

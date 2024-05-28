@@ -44,6 +44,10 @@ class CodeInterpreterAPISettings(BaseSettings):
     # deprecated
     VERBOSE: bool = DEBUG
 
+    # Environment
+    WORK_DIR: str = "/app/work"
+    PYTHON_OUT_FILE: str = "main.py"
+
     class Config:
         env_file = "./.env"
         extra = "ignore"
