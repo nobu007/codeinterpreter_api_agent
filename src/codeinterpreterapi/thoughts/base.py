@@ -80,6 +80,7 @@ class MyToTChain(ToTChain):
         self,
         thought: Thought,
         level: int,
+        step: int,
         run_manager: Optional[CallbackManagerForChainRun] = None,
     ) -> None:
         if run_manager:
@@ -88,7 +89,7 @@ class MyToTChain(ToTChain):
                 ThoughtValidity.VALID_INTERMEDIATE: "yellow",
                 ThoughtValidity.INVALID: "red",
             }
-            text = indent(f"Thought: {thought.text}\n", prefix="    " * level)
+            text = indent(f"Thought[{step}/{self.k}]: {thought.text}\n", prefix="    " * level)
             run_manager.on_text(text=text, color=colors[thought.validity], verbose=self.verbose)
 
     def _call(
@@ -108,7 +109,7 @@ class MyToTChain(ToTChain):
         thoughts_path: tuple[str, ...] = ()
 
         level = 0
-        for _ in range(self.k):
+        for step in range(self.k):
             level = self.tot_memory.level
             thought_text = self.thought_generator.next_thought(
                 problem_description, thoughts_path, callbacks=_run_manager.get_child(), tot_checker=self.checker
@@ -117,10 +118,11 @@ class MyToTChain(ToTChain):
             thought_validity = self.checker(checker_inputs, callbacks=_run_manager.get_child())["validity"]
             thought = Thought(text=thought_text, validity=thought_validity)
             if thought.validity == ThoughtValidity.VALID_FINAL:
-                self.log_thought(thought, level, run_manager)
+                self.log_thought(thought, level, step, run_manager)
                 return {self.output_key: thought.text}
-            self.tot_memory.store(thought)
-            self.log_thought(thought, level, run_manager)
+            elif thought.validity == ThoughtValidity.VALID_INTERMEDIATE:
+                self.tot_memory.store(thought)
+            self.log_thought(thought, level, step, run_manager)
             thoughts_path = self.tot_controller(self.tot_memory)
 
         return {self.output_key: "No solution found"}

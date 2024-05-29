@@ -125,6 +125,7 @@ class MyProposePromptStrategyJa(ProposePromptStrategy):
                 n=self.c,
                 **kwargs,
             )
+            print("thoughts_path=", thoughts_path)
             print("new_thoughts=", new_thoughts)
             if not new_thoughts:
                 return ""
