@@ -6,27 +6,25 @@ import tempfile
 from io import BytesIO
 from uuid import uuid4
 
-from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxOutput  # type: ignore
 from langchain_core.tools import StructuredTool
 
+from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.schema import CodeInput, File
 
 
 class PythonTools:
-    def __init__(self, llm, codebox: CodeBox = None, verbose: bool = False):
-        self.codebox = codebox
-        self.llm = llm
-        self.verbose = verbose
+    def __init__(self, ci_params: CodeInterpreterParams):
+        self.ci_params = ci_params
         self.code_log = []
         self.input_files = []
         self.output_files = []
 
     @classmethod
-    def get_tools_python(cls, llm) -> None:
-        tools_instance = cls(llm=llm)
+    def get_tools_python(cls, ci_params: CodeInterpreterParams) -> None:
+        tools_instance = cls(ci_params=ci_params)
         tools = [
             StructuredTool(
                 name="python",
@@ -92,9 +90,9 @@ class PythonTools:
     def _run_handler(self, code: str) -> str:
         """Run code in container and send the output to the user"""
         self.show_code(code)
-        if self.codebox is None:
+        if self.ci_params.codebox is None:
             return self._run_handler_local(code)
-        output: CodeBoxOutput = self.codebox.run(code)
+        output: CodeBoxOutput = self.ci_params.codebox.run(code)
         self.code_log.append((code, output.content))
 
         if not isinstance(output.content, str):
@@ -113,12 +111,12 @@ class PythonTools:
                     r"ModuleNotFoundError: No module named '(.*)'",
                     output.content,
                 ):
-                    self.codebox.install(package.group(1))
+                    self.ci_params.codebox.install(package.group(1))
                     return f"{package.group(1)} was missing but got installed now. Please try again."
             else:
                 # TODO: pre-analyze error to optimize next code generation
                 pass
-            if self.verbose:
+            if self.ci_params.verbose:
                 print("Error:", output.content)
 
         # elif modifications := get_file_modifications(code, self.llm):
@@ -137,9 +135,9 @@ class PythonTools:
     async def _arun_handler(self, code: str) -> str:
         """Run code in container and send the output to the user"""
         await self.ashow_code(code)
-        if self.codebox is None:
+        if self.ci_params.codebox is None:
             return self._arun_handler_local(code)
-        output: CodeBoxOutput = await self.codebox.arun(code)
+        output: CodeBoxOutput = await self.ci_params.codebox.arun(code)
         self.code_log.append((code, output.content))
 
         if not isinstance(output.content, str):
@@ -158,12 +156,12 @@ class PythonTools:
                     r"ModuleNotFoundError: No module named '(.*)'",
                     output.content,
                 ):
-                    await self.codebox.ainstall(package.group(1))
+                    await self.ci_params.codebox.ainstall(package.group(1))
                     return f"{package.group(1)} was missing but got installed now. Please try again."
             else:
                 # TODO: pre-analyze error to optimize next code generation
                 pass
-            if self.verbose:
+            if self.ci_params.verbose:
                 print("Error:", output.content)
 
         # elif modifications := await aget_file_modifications(code):
@@ -180,19 +178,20 @@ class PythonTools:
         return output.content
 
     def show_code(self, code: str) -> None:
-        if self.verbose:
+        if self.ci_params.verbose:
             print(code)
 
     async def ashow_code(self, code: str) -> None:
         """Callback function to show code to the user."""
-        if self.verbose:
+        if self.ci_params.verbose:
             print(code)
 
 
 def test():
     settings.WORK_DIR = "/tmp"
     llm = prepare_test_llm()
-    tools_instance = PythonTools(llm=llm)
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm)
+    tools_instance = PythonTools(ci_params=ci_params)
     test_code = "print('test output')"
     result = tools_instance._run_handler(test_code)
     print("result=", result)

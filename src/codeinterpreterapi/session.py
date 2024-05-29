@@ -6,27 +6,22 @@ from uuid import UUID
 
 from codeboxapi import CodeBox  # type: ignore
 from gui_agent_loop_core.schema.schema import GuiAgentInterpreterChatResponseStr
-from langchain.agents import AgentExecutor
 from langchain.callbacks.base import Callbacks
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 from langchain_community.chat_message_histories.postgres import PostgresChatMessageHistory
 from langchain_community.chat_message_histories.redis import RedisChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
+from codeinterpreterapi.brain.brain import CodeInterpreterBrain
+from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.chains import aremove_download_link, remove_download_link
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import CodeInterpreterLlm
 from codeinterpreterapi.schema import CodeInterpreterResponse, File, SessionStatus, UserRequest
-from codeinterpreterapi.thoughts.thoughts import CodeInterpreterToT
-
-from .planners.planners import CodeInterpreterPlanner
-from .supervisors.supervisors import CodeInterpreterSupervisor
-from .tools.tools import CodeInterpreterTools
 
 
 def _handle_deprecated_kwargs(kwargs: dict) -> None:
@@ -49,19 +44,19 @@ class CodeInterpreterSession:
         **kwargs: Any,
     ) -> None:
         _handle_deprecated_kwargs(kwargs)
-        self.is_local = is_local
-        self.is_ja = is_ja
-        self.codebox = CodeBox(requirements=settings.CUSTOM_PACKAGES)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
-        self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
-        self.tools: list[BaseTool] = CodeInterpreterTools(additional_tools, self.llm).get_all_tools()
+        self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()  # TODO: remove from session
+        ci_params = CodeInterpreterParams(
+            llm=self.llm,
+            tools=additional_tools,
+            callbacks=callbacks,
+            verbose=self.verbose,
+            is_local=is_local,
+            is_ja=is_ja,
+        )
+        self.brain = CodeInterpreterBrain(ci_params)
         self.log("self.llm=" + str(self.llm))
 
-        self.callbacks = callbacks
-        self.agent_executor: Optional[Runnable] = None
-        self.llm_planner: Optional[Runnable] = None
-        self.supervisor: Optional[AgentExecutor] = None
-        self.thought: Optional[Runnable] = None
         self.input_files: list[File] = []
         self.output_files: list[File] = []
         self.code_log: list[tuple[str, str]] = []
@@ -76,45 +71,6 @@ class CodeInterpreterSession:
     @property
     def session_id(self) -> Optional[UUID]:
         return self.codebox.session_id
-
-    def initialize(self):
-        self.initialize_agent_executor()
-        self.initialize_llm_planner()
-        self.initialize_supervisor()
-        self.initialize_thought()
-
-    def initialize_agent_executor(self):
-        is_experimental = True
-        if is_experimental:
-            self.agent_executor = CodeInterpreterAgent.create_agent_and_executor_experimental(
-                llm=self.llm,
-                tools=self.tools,
-                verbose=self.verbose,
-                is_ja=self.is_ja,
-            )
-        else:
-            self.agent_executor = CodeInterpreterAgent.create_agent_executor_lcel(
-                llm=self.llm,
-                tools=self.tools,
-                verbose=self.verbose,
-                is_ja=self.is_ja,
-                chat_memory=self._history_backend(),
-                callbacks=self.callbacks,
-            )
-
-    def initialize_llm_planner(self):
-        self.llm_planner = CodeInterpreterPlanner.choose_planner(llm=self.llm, tools=self.tools, is_ja=self.is_ja)
-
-    def initialize_supervisor(self):
-        self.supervisor = CodeInterpreterSupervisor.choose_supervisor(
-            planner=self.llm_planner,
-            executor=self.agent_executor,
-            tools=self.tools,
-            verbose=self.verbose,
-        )
-
-    def initialize_thought(self):
-        self.thought = CodeInterpreterToT.get_runnable_tot_chain(llm=self.llm, is_ja=self.is_ja, is_simple=False)
 
     def start(self) -> SessionStatus:
         print("start")

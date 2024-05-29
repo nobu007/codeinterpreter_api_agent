@@ -1,10 +1,13 @@
 from typing import Any, Dict, List, Optional, Union
 
-from codeinterpreterapi.thoughts.base import MyToTChain
-from codeinterpreterapi.thoughts.checker import create_tot_chain_from_llm
 from langchain_core.runnables import RunnableSerializable
 from langchain_core.runnables.config import RunnableConfig
 from langchain_core.runnables.utils import Input, Output
+
+from codeinterpreterapi.brain.params import CodeInterpreterParams
+from codeinterpreterapi.llm.llm import prepare_test_llm
+from codeinterpreterapi.thoughts.base import MyToTChain
+from codeinterpreterapi.thoughts.checker import create_tot_chain_from_llm
 
 
 class CodeInterpreterToT(RunnableSerializable):
@@ -14,7 +17,7 @@ class CodeInterpreterToT(RunnableSerializable):
         super().__init__()
         self.tot_chain = create_tot_chain_from_llm(llm=llm, is_ja=is_ja, is_simple=is_simple)
 
-    def run(self, input: Input):
+    def run(self, input: Input) -> Output:
         problem_description = input["input"]
         return self.tot_chain.run(problem_description=problem_description)
 
@@ -41,14 +44,16 @@ class CodeInterpreterToT(RunnableSerializable):
         raise NotImplementedError("Async not implemented yet")
 
     @classmethod
-    def get_runnable_tot_chain(cls, llm=None, is_ja=True, is_simple=False):
+    def get_runnable_tot_chain(cls, ci_params: CodeInterpreterParams, is_simple: bool = False):
         # ToTChainのインスタンスを作成
-        tot_chain = cls(llm=llm, is_ja=is_ja, is_simple=is_simple)
+        tot_chain = cls(llm=ci_params.llm, is_ja=ci_params.is_ja, is_simple=is_simple)
         return tot_chain
 
 
 def test():
-    tot_chain = CodeInterpreterToT.get_runnable_tot_chain(is_simple=True)
+    llm = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm)
+    tot_chain = CodeInterpreterToT.get_runnable_tot_chain(ci_params=ci_params)
     tot_chain.invoke({"input": sample2})
 
 

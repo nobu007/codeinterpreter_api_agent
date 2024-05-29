@@ -14,40 +14,40 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
 
 from codeinterpreterapi.agents.plan_and_execute.agent_executor import load_agent_executor
+from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
 
 
 class CodeInterpreterAgent:
     @staticmethod
-    def create_agent_executor_lcel(llm, tools, verbose=False, chat_memory=None, callbacks=None, is_ja=True) -> Runnable:
+    def create_agent_executor_lcel(ci_params: CodeInterpreterParams) -> Runnable:
         # prompt
         prompt = hub.pull("hwchase17/openai-functions-agent")
 
         # agent
-        agent = create_tool_calling_agent(llm, tools, prompt)
+        agent = create_tool_calling_agent(ci_params.llm, ci_params.tools, prompt)
 
         # agent_executor
         agent_executor = AgentExecutor(
             agent=agent,
-            tools=tools,
-            verbose=verbose,
+            tools=ci_params.tools,
+            verbose=ci_params.verbose,
             # memory=ConversationBufferMemory(
             #     memory_key="chat_history",
             #     return_messages=True,
             #     chat_memory=chat_memory,
             # ),
-            callbacks=callbacks,
+            callbacks=ci_params.callbacks,
         )
         print("agent_executor.input_keys", agent_executor.input_keys)
         print("agent_executor.output_keys", agent_executor.output_keys)
         return agent_executor
 
     @staticmethod
-    def choose_single_chat_agent(
-        llm,
-        tools,
-        is_ja,
-    ) -> BaseSingleActionAgent:
+    def choose_single_chat_agent(ci_params: CodeInterpreterParams) -> BaseSingleActionAgent:
+        llm = ci_params.llm
+        tools = ci_params.tools
+        is_ja = ci_params.is_ja
         system_message = settings.SYSTEM_MESSAGE if is_ja else settings.SYSTEM_MESSAGE_JA
         if isinstance(llm, ChatOpenAI) or isinstance(llm, AzureChatOpenAI):
             print("choose_agent OpenAIFunctionsAgent")
@@ -80,16 +80,16 @@ class CodeInterpreterAgent:
             )
 
     @staticmethod
-    def create_agent_and_executor(llm, tools, verbose, chat_memory, callbacks, is_ja=True) -> AgentExecutor:
+    def create_agent_and_executor(ci_params: CodeInterpreterParams) -> AgentExecutor:
         # agent
-        agent = CodeInterpreterAgent.choose_single_chat_agent(llm, tools, is_ja=is_ja)
+        agent = CodeInterpreterAgent.choose_single_chat_agent(ci_params)
         print("create_agent_and_executor agent=", str(type(agent)))
         return agent
 
     @staticmethod
-    def create_agent_and_executor_experimental(llm, tools, verbose, is_ja) -> AgentExecutor:
+    def create_agent_and_executor_experimental(ci_params: CodeInterpreterParams) -> AgentExecutor:
         # agent_executor
-        agent_executor = load_agent_executor(llm, tools, verbose=verbose, is_ja=is_ja)
+        agent_executor = load_agent_executor(ci_params)
         print("create_agent_and_executor_experimental")
 
         return agent_executor

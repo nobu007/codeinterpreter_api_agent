@@ -1,15 +1,13 @@
-from typing import List
-
 from langchain import hub
 from langchain.agents import create_react_agent
-from langchain.base_language import BaseLanguageModel
-from langchain.tools import BaseTool
 from langchain_core.runnables import Runnable
+
+from codeinterpreterapi.brain.params import CodeInterpreterParams
 
 
 class CodeInterpreterPlanner:
     @staticmethod
-    def choose_planner(llm: BaseLanguageModel, tools: List[BaseTool], is_ja: bool) -> Runnable:
+    def choose_planner(ci_params: CodeInterpreterParams) -> Runnable:
         """
         Load a chat planner.
 
@@ -20,11 +18,19 @@ class CodeInterpreterPlanner:
 
         Returns:
             LLMPlanner
-        """
 
+        <prompt: simple_react>
+        Input
+          tools:
+          tool_names:
+          input:
+          agent_scratchpad:
+        Output
+          content: Free text in str.
+        """
         prompt_name = "nobu/simple_react"
-        if is_ja:
+        if ci_params.is_ja:
             prompt_name += "_ja"
         prompt = hub.pull(prompt_name)
-        planner_agent = create_react_agent(llm, tools, prompt)
+        planner_agent = create_react_agent(ci_params.llm, ci_params.tools, prompt)
         return planner_agent
