@@ -1,6 +1,9 @@
 import asyncio
 
+from codeboxapi import CodeBox  # type: ignore
+
 from codeinterpreterapi import CodeInterpreterSession, File
+from codeinterpreterapi.config import settings
 
 
 def test_codebox() -> None:
@@ -10,7 +13,8 @@ def test_codebox() -> None:
 
 
 def test_localbox() -> None:
-    session = CodeInterpreterSession(local=True)
+    session = CodeInterpreterSession(is_local=True)
+    session.ci_params.codebox = CodeBox(requirements=settings.CUSTOM_PACKAGES)
     assert run_sync(session), "Failed to run sync CodeInterpreterSession locally"
     assert asyncio.run(run_async(session)), "Failed to run async CodeInterpreterSession locally"
 
@@ -94,5 +98,5 @@ async def run_async(session: CodeInterpreterSession) -> bool:
 
 
 if __name__ == "__main__":
-    test_codebox()
+    # test_codebox()
     test_localbox()

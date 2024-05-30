@@ -68,17 +68,36 @@ class CodeInterpreterBrain(Runnable):
     def initialize_thought(self):
         self.thought = CodeInterpreterToT.get_runnable_tot_chain(ci_params=self.ci_params)
 
+    def prepare_input(self, input: Input):
+        if self.current_agent == AgentEnum.agent_executor:
+            if "intermediate_steps" not in input:
+                input["intermediate_steps"] = ""
+        elif self.current_agent == AgentEnum.llm_planner:
+            if "intermediate_steps" in input:
+                del input['intermediate_steps']
+        elif self.current_agent == AgentEnum.supervisor:
+            if "intermediate_steps" in input:
+                del input['intermediate_steps']
+        else:
+            # thought
+            if "intermediate_steps" in input:
+                del input['intermediate_steps']
+        return input
+
     def run(self, input: Input) -> Output:
+        input = self.prepare_input(input)
         if self.current_agent == AgentEnum.agent_executor:
             output = self.agent_executor.invoke(input)
         elif self.current_agent == AgentEnum.llm_planner:
             output = self.llm_planner.invoke(input)
         elif self.current_agent == AgentEnum.supervisor:
-            output = self.thought.invoke(input)
+            output = self.supervisor.invoke(input)
         else:
             # thought
-            output = self.agent_executor.invoke(input)
+            output = self.thought.invoke(input)
         self.update_agent_score()
+        if isinstance(output, str):
+            output = {"output": output}
         return output
 
     def __call__(self, input: Input) -> Output:
@@ -163,7 +182,9 @@ def test():
     brain.use_agent(AgentEnum.supervisor)
     result = brain.invoke(input_dict)
     print("result=", result)
-    # assert "test output" in result # TODO: refine logic. now returns "Pythonコードを実行するために、Pythonインタプリタを使用する必要がある。"
+    # assert (
+    #     "test output" in result["output"]
+    # )  # TODO: refine logic. now returns "Pythonコードを実行して出力を確認する。"
 
     # try4: thought
     input_dict = {

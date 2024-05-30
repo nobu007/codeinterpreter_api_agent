@@ -14,7 +14,6 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.tools import BaseTool
 
-from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.brain import CodeInterpreterBrain
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.chains import aremove_download_link, remove_download_link
@@ -46,7 +45,7 @@ class CodeInterpreterSession:
         _handle_deprecated_kwargs(kwargs)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
         self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()  # TODO: remove from session
-        ci_params = CodeInterpreterParams(
+        self.ci_params = CodeInterpreterParams(
             llm=self.llm,
             tools=additional_tools,
             callbacks=callbacks,
@@ -54,7 +53,7 @@ class CodeInterpreterSession:
             is_local=is_local,
             is_ja=is_ja,
         )
-        self.brain = CodeInterpreterBrain(ci_params)
+        self.brain = CodeInterpreterBrain(self.ci_params)
         self.log("self.llm=" + str(self.llm))
 
         self.input_files: list[File] = []
@@ -64,47 +63,46 @@ class CodeInterpreterSession:
     @classmethod
     def from_id(cls, session_id: UUID, **kwargs: Any) -> "CodeInterpreterSession":
         session = cls(**kwargs)
-        session.codebox = CodeBox.from_id(session_id)
-        session.agent_executor = CodeInterpreterAgent.create_agent_and_executor()
+        session.ci_params.codebox = CodeBox.from_id(session_id)
         return session
 
     @property
     def session_id(self) -> Optional[UUID]:
-        return self.codebox.session_id
+        return self.ci_params.codebox.session_id
 
     def start(self) -> SessionStatus:
         print("start")
-        status = SessionStatus.from_codebox_status(self.codebox.start())
-        self.initialize()
-        self.codebox.run(
+        status = SessionStatus.from_codebox_status(self.ci_params.codebox.start())
+        self.brain.initialize()
+        self.ci_params.codebox.run(
             f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
         )
         return status
 
     async def astart(self) -> SessionStatus:
         print("astart")
-        status = SessionStatus.from_codebox_status(await self.codebox.astart())
-        self.initialize()
-        await self.codebox.arun(
+        status = SessionStatus.from_codebox_status(await self.ci_params.codebox.astart())
+        self.brain.initialize()
+        await self.ci_params.codebox.arun(
             f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
         )
         return status
 
     def start_local(self) -> SessionStatus:
         print("start_local")
-        self.initialize()
+        self.brain.initialize()
         status = SessionStatus(status="started")
         return status
 
     async def astart_local(self) -> SessionStatus:
         print("astart_local")
         status = self.start_local()
-        self.initialize()
+        self.brain.initialize()
         return status
 
     def _history_backend(self) -> BaseChatMessageHistory:
         return (
-            CodeBoxChatMessageHistory(codebox=self.codebox)
+            CodeBoxChatMessageHistory(codebox=self.ci_params.codebox)
             if settings.HISTORY_BACKEND == "codebox"
             else (
                 RedisChatMessageHistory(
@@ -134,7 +132,7 @@ class CodeInterpreterSession:
         for file in request.files:
             self.input_files.append(file)
             request.content += f"[Attachment: {file.name}]\n"
-            self.codebox.upload(file.name, file.content)
+            self.ci_params.codebox.upload(file.name, file.content)
         request.content += "**File(s) are now available in the cwd. **\n"
 
     async def _ainput_handler(self, request: UserRequest) -> None:
@@ -149,7 +147,7 @@ class CodeInterpreterSession:
         for file in request.files:
             self.input_files.append(file)
             request.content += f"[Attachment: {file.name}]\n"
-            await self.codebox.aupload(file.name, file.content)
+            await self.ci_params.codebox.aupload(file.name, file.content)
         request.content += "**File(s) are now available in the cwd. **\n"
 
     def _output_handler(self, final_response: str) -> CodeInterpreterResponse:
@@ -216,22 +214,18 @@ class CodeInterpreterSession:
         user_request = UserRequest(content=user_msg, files=files)
         try:
             self._input_handler(user_request)
-            assert self.agent_executor, "Session not initialized."
             print("user_request.content=", user_request.content)
             agent_scratchpad = ""
             input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
 
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
-            response = self.agent_executor.invoke(input=input_message)
-            # response = self.llm_planner.invoke(input=input_message)
-            # response = self.supervisor.invoke(input=input_message)
-            # response = self.thought.invoke(input=input_message)
+            response = self.brain.invoke(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("response(type)=", type(response))
             print("response=", response)
 
             output = response["output"]
-            print("generate_response agent_executor.invoke output=", output)
+            print("generate_response brain.invoke output=", output)
             return self._output_handler(output)
             # return output
         except Exception as e:
@@ -256,14 +250,13 @@ class CodeInterpreterSession:
         user_request = UserRequest(content=user_msg, files=files)
         try:
             await self._ainput_handler(user_request)
-            assert self.agent_executor, "Session not initialized."
 
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
-            response = await self.agent_executor.ainvoke(input=user_request.content)
+            response = await self.brain.ainvoke(input=user_request.content)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
 
             output = response["output"]
-            print("agenerate_response agent_executor.ainvoke output=", output)
+            print("agenerate_response brain.ainvoke output=", output)
             return await self._aoutput_handler(output)
         except Exception as e:
             if self.verbose:
@@ -289,10 +282,9 @@ class CodeInterpreterSession:
         user_request = UserRequest(content=user_msg, files=files)
         try:
             self._input_handler(user_request)
-            assert self.agent_executor, "Session not initialized."
             print("llm stream start")
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
-            response = self.agent_executor.stream(input=user_request.content)
+            response = self.brain.stream(input=user_request.content)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("llm stream response(type)=", type(response))
             print("llm stream response=", response)
@@ -302,7 +294,7 @@ class CodeInterpreterSession:
                 yield chunk
                 full_output += chunk["output"]
 
-            print("generate_response_stream agent_executor.stream full_output=", full_output)
+            print("generate_response_stream brain.stream full_output=", full_output)
             self._aoutput_handler(full_output)
         except Exception as e:
             if self.verbose:
@@ -325,11 +317,10 @@ class CodeInterpreterSession:
         user_request = UserRequest(content=user_msg, files=files)
         try:
             await self._ainput_handler(user_request)
-            assert self.agent_executor, "Session not initialized."
 
             print("llm astream start")
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
-            response = self.agent_executor.astream(input=user_request.content)
+            response = self.brain.astream(input=user_request.content)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("llm astream response(type)=", type(response))
             print("llm astream response=", response)
@@ -339,7 +330,7 @@ class CodeInterpreterSession:
                 yield chunk
                 full_output += chunk["output"]
 
-            print("agent_executor.astream full_output=", full_output)
+            print("agenerate_response_stream brain.astream full_output=", full_output)
             await self._aoutput_handler(full_output)
         except Exception as e:
             if self.verbose:
@@ -356,20 +347,20 @@ class CodeInterpreterSession:
                 )
 
     def is_running(self) -> bool:
-        return self.codebox.status() == "running"
+        return self.ci_params.codebox.status() == "running"
 
     async def ais_running(self) -> bool:
-        return await self.codebox.astatus() == "running"
+        return await self.ci_params.codebox.astatus() == "running"
 
     def log(self, msg: str) -> None:
         if self.verbose:
             print(msg)
 
     def stop(self) -> SessionStatus:
-        return SessionStatus.from_codebox_status(self.codebox.stop())
+        return SessionStatus.from_codebox_status(self.ci_params.codebox.stop())
 
     async def astop(self) -> SessionStatus:
-        return SessionStatus.from_codebox_status(await self.codebox.astop())
+        return SessionStatus.from_codebox_status(await self.ci_params.codebox.astop())
 
     def __enter__(self) -> "CodeInterpreterSession":
         if self.is_local:
