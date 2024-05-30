@@ -70,8 +70,8 @@ class CodeInterpreterBrain(Runnable):
 
     def prepare_input(self, input: Input):
         if self.current_agent == AgentEnum.agent_executor:
-            if "intermediate_steps" not in input:
-                input["intermediate_steps"] = ""
+            if "intermediate_steps" in input:
+                del input['intermediate_steps']
         elif self.current_agent == AgentEnum.llm_planner:
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
@@ -153,6 +153,9 @@ def test():
     llm = prepare_test_llm()
     ci_params = CodeInterpreterParams(
         llm=llm,
+        llm_fast=llm,
+        llm_smart=llm,
+        llm_local=llm,
         verbose=True,
     )
     brain = CodeInterpreterBrain(ci_params)

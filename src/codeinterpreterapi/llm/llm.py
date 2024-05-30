@@ -7,8 +7,7 @@ from codeinterpreterapi.config import settings
 
 class CodeInterpreterLlm:
     @classmethod
-    def get_llm(cls) -> BaseChatModel:
-        model = settings.MODEL
+    def get_llm(cls, model: str = settings.MODEL) -> BaseChatModel:
         max_output_tokens = 1024 * 4
         if (
             settings.AZURE_OPENAI_API_KEY
@@ -61,7 +60,22 @@ class CodeInterpreterLlm:
                 anthropic_api_key=settings.ANTHROPIC_API_KEY,
                 max_tokens=max_output_tokens,
             )
-        raise ValueError("Please set the API key for the LLM you want to use.")
+        raise ValueError("Please set the API key for model=", model)
+
+    @classmethod
+    def get_llm_fast(cls, model: str = settings.MODEL_FAST) -> BaseChatModel:
+        print("get_llm_fast=", model)
+        return cls.get_llm(model=model)
+
+    @classmethod
+    def get_llm_smart(cls, model: str = settings.MODEL_SMART) -> BaseChatModel:
+        print("get_llm_smart=", model)
+        return cls.get_llm(model=model)
+
+    @classmethod
+    def get_llm_local(cls, model: str = settings.MODEL_LOCAL) -> BaseChatModel:
+        print("get_llm_local=", model)
+        return cls.get_llm(model=model)
 
 
 def prepare_test_llm():

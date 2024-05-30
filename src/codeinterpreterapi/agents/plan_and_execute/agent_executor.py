@@ -24,7 +24,7 @@ def load_agent_executor(ci_params: CodeInterpreterParams) -> AgentExecutor:
     prompt = create_structured_chat_agent_prompt(ci_params.is_ja)
     print("prompt=", prompt.get_prompts())
     agent = create_structured_chat_agent(
-        llm=ci_params.llm,
+        llm=ci_params.llm_smart,
         tools=ci_params.tools,
         # callback_manager=callback_manager,
         # output_parser=output_parser,

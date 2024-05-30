@@ -32,5 +32,5 @@ class CodeInterpreterPlanner:
         if ci_params.is_ja:
             prompt_name += "_ja"
         prompt = hub.pull(prompt_name)
-        planner_agent = create_react_agent(ci_params.llm, ci_params.tools, prompt)
+        planner_agent = create_react_agent(ci_params.llm_fast, ci_params.tools, prompt)
         return planner_agent

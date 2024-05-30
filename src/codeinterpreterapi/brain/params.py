@@ -10,6 +10,9 @@ from langchain_core.pydantic_v1 import BaseModel
 class CodeInterpreterParams(BaseModel):
     codebox: Optional[CodeBox] = None
     llm: Optional[BaseLanguageModel] = None
+    llm_fast: Optional[BaseLanguageModel] = None
+    llm_smart: Optional[BaseLanguageModel] = None
+    llm_local: Optional[BaseLanguageModel] = None
     tools: Optional[List[BaseTool]] = []
     callbacks: Optional[Callbacks] = None
     verbose: Optional[bool] = False

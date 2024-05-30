@@ -24,6 +24,9 @@ class CodeInterpreterAPISettings(BaseSettings):
 
     # LLM Settings
     MODEL: str = "claude-3-haiku-20240307"
+    MODEL_FAST: str = "claude-3-haiku-20240307"
+    MODEL_SMART: str = "claude-3-haiku-20240307"
+    MODEL_LOCAL: str = "claude-3-haiku-20240307"
     TEMPERATURE: float = 0.03
     DETAILED_ERROR: bool = True
     SYSTEM_MESSAGE: SystemMessage = code_interpreter_system_message

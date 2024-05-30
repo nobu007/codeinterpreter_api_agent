@@ -16,7 +16,7 @@ from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.brain.brain import CodeInterpreterBrain
 from codeinterpreterapi.brain.params import CodeInterpreterParams
-from codeinterpreterapi.chains import aremove_download_link, remove_download_link
+from codeinterpreterapi.chains import aremove_download_link
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import CodeInterpreterLlm
@@ -36,17 +36,25 @@ class CodeInterpreterSession:
     def __init__(
         self,
         llm: Optional[BaseLanguageModel] = None,
-        additional_tools: list[BaseTool] = [],
+        additional_tools: list[BaseTool] = None,
         callbacks: Callbacks = None,
         is_local: bool = True,
         is_ja: bool = True,
         **kwargs: Any,
     ) -> None:
+        if additional_tools is None:
+            additional_tools = []
         _handle_deprecated_kwargs(kwargs)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
-        self.llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()  # TODO: remove from session
+        llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
+        llm_fast: BaseLanguageModel = CodeInterpreterLlm.get_llm_fast()
+        llm_smart: BaseLanguageModel = CodeInterpreterLlm.get_llm_smart()
+        llm_local: BaseLanguageModel = CodeInterpreterLlm.get_llm_local()
         self.ci_params = CodeInterpreterParams(
-            llm=self.llm,
+            llm=llm,
+            llm_fast=llm_fast,
+            llm_smart=llm_smart,
+            llm_local=llm_local,
             tools=additional_tools,
             callbacks=callbacks,
             verbose=self.verbose,
@@ -54,7 +62,7 @@ class CodeInterpreterSession:
             is_ja=is_ja,
         )
         self.brain = CodeInterpreterBrain(self.ci_params)
-        self.log("self.llm=" + str(self.llm))
+        self.log("llm=" + str(llm))
 
         self.input_files: list[File] = []
         self.output_files: list[File] = []
@@ -157,12 +165,12 @@ class CodeInterpreterSession:
                 # rm ![Any](file.name) from the response
                 final_response = re.sub(r"\n\n!\[.*\]\(.*\)", "", final_response)
 
-        if self.output_files and re.search(r"\n\[.*\]\(.*\)", final_response):
-            try:
-                final_response = remove_download_link(final_response, self.llm)
-            except Exception as e:
-                if self.verbose:
-                    print("Error while removing download links:", e)
+        # if self.output_files and re.search(r"\n\[.*\]\(.*\)", final_response):
+        #     try:
+        #         final_response = remove_download_link(final_response, self.llm)
+        #     except Exception as e:
+        #         if self.verbose:
+        #             print("Error while removing download links:", e)
 
         output_files = self.output_files
         code_log = self.code_log
