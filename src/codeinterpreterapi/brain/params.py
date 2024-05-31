@@ -5,6 +5,21 @@ from langchain.base_language import BaseLanguageModel
 from langchain.callbacks.base import Callbacks
 from langchain.tools import BaseTool
 from langchain_core.pydantic_v1 import BaseModel
+from langchain_core.tools import tool
+
+
+@tool
+def test_plus(first: str, second: str) -> str:
+    """Plus two integers together."""
+    print("test_plus f=", first, ", s=", second)
+    return str(int(first) + int(second))
+
+
+@tool
+def test_multiply(first: str, second: str) -> str:
+    """Multiply two integers together."""
+    print("test_multiply f=", first, ", s=", second)
+    return str(int(first) * int(second))
 
 
 class CodeInterpreterParams(BaseModel):
@@ -21,7 +36,8 @@ class CodeInterpreterParams(BaseModel):
 
     @classmethod
     def get_test_params(cls, llm: BaseLanguageModel):
-        return CodeInterpreterParams(llm=llm)
+        tools = [test_plus, test_multiply]
+        return CodeInterpreterParams(llm=llm, tools=tools, llm_fast=llm, llm_smart=llm, llm_local=llm, verbose=True)
 
     class Config:
         # for CodeBox

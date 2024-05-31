@@ -2,10 +2,13 @@ import getpass
 import os
 import platform
 
-from langchain.agents import AgentExecutor
+from langchain import hub
+from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.runnables import Runnable
 
 from codeinterpreterapi.brain.params import CodeInterpreterParams
+from codeinterpreterapi.llm.llm import prepare_test_llm
+from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
 
 
 class CodeInterpreterSupervisor:
@@ -17,10 +20,26 @@ class CodeInterpreterSupervisor:
         operating_system = platform.system()
         info = f"[User Info]\nName: {username}\nCWD: {current_working_directory}\nOS: {operating_system}"
         print("choose_supervisor info=", info)
-        agent_executor = AgentExecutor(agent=planner, tools=ci_params.tools, verbose=ci_params.verbose)
         # prompt = hub.pull("nobu/chat_planner")
+        prompt = hub.pull("hwchase17/openai-tools-agent")
         # agent = create_react_agent(llm, [], prompt)
         # return agent
         # prompt = hub.pull("nobu/code_writer:0c56967d")
+        agent = create_tool_calling_agent(ci_params.llm, ci_params.tools, prompt)
+        agent_executor = AgentExecutor(agent=agent, tools=ci_params.tools, verbose=ci_params.verbose)
 
         return agent_executor
+
+
+def test():
+    sample = "ステップバイステップで2*5+2を計算して。"
+    llm = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm)
+    planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
+    supervisor = CodeInterpreterSupervisor.choose_supervisor(planner=planner, ci_params=ci_params)
+    result = supervisor.invoke({"input": sample, "agent_scratchpad": ""})
+    print("result=", result)
+
+
+if __name__ == "__main__":
+    test()
