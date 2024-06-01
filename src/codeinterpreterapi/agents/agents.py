@@ -16,6 +16,7 @@ from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from codeinterpreterapi.agents.plan_and_execute.agent_executor import load_agent_executor
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
+from codeinterpreterapi.llm.llm import prepare_test_llm
 
 
 class CodeInterpreterAgent:
@@ -93,3 +94,16 @@ class CodeInterpreterAgent:
         print("create_agent_and_executor_experimental")
 
         return agent_executor
+
+
+def test():
+    sample = "pythonで円周率を表示するプログラムを実行してください。"
+    llm = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm)
+    agent = CodeInterpreterAgent.create_agent_and_executor_experimental(ci_params=ci_params)
+    result = agent.invoke({"input": sample, "agent_scratchpad": ""})
+    print("result=", result)
+
+
+if __name__ == "__main__":
+    test()
