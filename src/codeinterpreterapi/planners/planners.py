@@ -1,8 +1,8 @@
-from langchain import PromptTemplate
+from langchain import PromptTemplate, hub
 from langchain.agents import AgentExecutor
 from langchain.agents.agent import RunnableAgent
 from langchain.tools.render import render_text_description
-from langchain_core.runnables import Runnable, RunnablePassthrough
+from langchain_core.runnables import Runnable
 
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
@@ -37,13 +37,12 @@ class CodeInterpreterPlanner:
         prompt_name = "nobu/chat_planner"
         if ci_params.is_ja:
             prompt_name += "_ja"
-        # prompt = hub.pull(prompt_name)
-        prompt = CodeInterpreterPlanner.get_prompt()
+        prompt = hub.pull(prompt_name)
+        # prompt = CodeInterpreterPlanner.get_prompt()
 
         # runnable
         runnable = (
-            RunnablePassthrough()
-            | create_complement_input(prompt)
+            create_complement_input(prompt)
             | prompt
             | ci_params.llm_fast
             # | StrOutputParser()

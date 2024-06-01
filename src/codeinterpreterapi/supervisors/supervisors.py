@@ -20,13 +20,28 @@ class CodeInterpreterSupervisor:
         operating_system = platform.system()
         info = f"[User Info]\nName: {username}\nCWD: {current_working_directory}\nOS: {operating_system}"
         print("choose_supervisor info=", info)
-        # prompt = hub.pull("nobu/chat_planner")
-        prompt = hub.pull("hwchase17/openai-tools-agent")
-        # agent = create_react_agent(llm, [], prompt)
-        # return agent
+
+        # plan
+        prompt_name = "nobu/code_writer"
+        if ci_params.is_ja:
+            prompt_name += "_ja"
+        exec_prompt = hub.pull(prompt_name)
+        if ci_params.is_ja:
+            prompt_name += "_ja"
+        # plan_agent = RunnableAgent(runnable=planner)
         # prompt = hub.pull("nobu/code_writer:0c56967d")
-        agent = create_tool_calling_agent(ci_params.llm, ci_params.tools, prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=ci_params.tools, verbose=ci_params.verbose)
+
+        # exec_agent
+        # exec_prompt = hub.pull("nobu/code_writer:0c56967d")
+        exec_prompt = hub.pull("hwchase17/openai-tools-agent")
+        # exec_prompt = create_complement_input(exec_prompt) | exec_prompt
+        # exec_runnable = exec_prompt | ci_params.llm_fast | CustomOutputParser()
+        # remapped_inputs = create_complement_input(exec_prompt).invoke({})
+        # exec_agent = RunnableAgent(runnable=exec_runnable, input_keys=list(remapped_inputs.keys()))
+        exec_agent = create_tool_calling_agent(ci_params.llm, ci_params.tools, exec_prompt)
+
+        # plan_chain
+        agent_executor = AgentExecutor(agent=exec_agent, tools=ci_params.tools, verbose=ci_params.verbose)
 
         return agent_executor
 
