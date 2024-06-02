@@ -85,6 +85,7 @@ class CodeInterpreterBrain(Runnable):
         return input
 
     def run(self, input: Input) -> Output:
+        self.update_next_agent()
         input = self.prepare_input(input)
         if self.current_agent == AgentEnum.agent_executor:
             output = self.agent_executor.invoke(input)
@@ -124,12 +125,15 @@ class CodeInterpreterBrain(Runnable):
 
     def update_agent_score(self):
         self.current_agent_score = CodeInterpreterBrain.AGENT_SCORE_MIN - 1  # temp: switch every time
+        print("CodeInterpreterBrain agent_score=", self.current_agent_score, f"({self.current_agent})")
+
+    def update_next_agent(self):
         if self.current_agent_score > CodeInterpreterBrain.AGENT_SCORE_MAX:
             self.current_agent_score = CodeInterpreterBrain.AGENT_SCORE_MAX
         if self.current_agent_score < CodeInterpreterBrain.AGENT_SCORE_MIN:
             self.current_agent_score = 0
             self.current_agent = self.use_next_agent()
-        print("CodeInterpreterBrain agent_score=", self.current_agent_score, f"({self.current_agent})")
+        print("CodeInterpreterBrain update_next_agent=", self.current_agent)
 
     def use_next_agent(self):
         current_agent = self.current_agent

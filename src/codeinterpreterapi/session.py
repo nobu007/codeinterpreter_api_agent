@@ -177,7 +177,9 @@ class CodeInterpreterSession:
         self.output_files = []
         self.code_log = []
 
-        response = CodeInterpreterResponse(content=final_response, files=output_files, code_log=code_log)
+        response = CodeInterpreterResponse(
+            content=final_response, files=output_files, code_log=code_log, agent_name=self.brain.current_agent
+        )
         return response
 
     async def _aoutput_handler(self, final_response: str) -> CodeInterpreterResponse:

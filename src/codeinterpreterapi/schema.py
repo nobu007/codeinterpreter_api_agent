@@ -115,6 +115,7 @@ class CodeInterpreterResponse(AIMessage):
 
     files: list[File] = []
     code_log: list[tuple[str, str]] = []
+    agent_name: str = ""
 
     def show(self) -> None:
         print("AI: ", self.content)
@@ -123,10 +124,10 @@ class CodeInterpreterResponse(AIMessage):
             file.show_image()
 
     def __str__(self) -> str:
-        return str(self.content)
+        return self.__repr__()
 
     def __repr__(self) -> str:
-        return f"CodeInterpreterResponse(content={self.content}, files={self.files})"
+        return f"CodeInterpreterResponse(content={self.content}, files={self.files}, agent_name={self.agent_name})"
 
 
 class SessionStatus(CodeBoxStatus):
