@@ -177,6 +177,7 @@ class CodeInterpreterSession:
         self.output_files = []
         self.code_log = []
 
+        print("_output_handler self.brain.current_agent=", self.brain.current_agent)
         response = CodeInterpreterResponse(
             content=final_response, files=output_files, code_log=code_log, agent_name=self.brain.current_agent
         )
@@ -239,16 +240,20 @@ class CodeInterpreterSession:
             return self._output_handler(output)
             # return output
         except Exception as e:
+            traceback_str = "\n"
             if self.verbose:
                 traceback.print_exc()
+                traceback_str = traceback.print_list
             if settings.DETAILED_ERROR:
                 return CodeInterpreterResponse(
-                    content="Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
+                    content="Error in CodeInterpreterSession: " + f"{e.__class__.__name__}  - {e}" + traceback_str,
+                    agent_name=self.brain.current_agent,
                 )
             else:
                 return CodeInterpreterResponse(
                     content="Sorry, something went while generating your response."
-                    "Please try again or restart the session."
+                    "Please try again or restart the session.",
+                    agent_name=self.brain.current_agent,
                 )
 
     async def agenerate_response(
@@ -273,12 +278,14 @@ class CodeInterpreterSession:
                 traceback.print_exc()
             if settings.DETAILED_ERROR:
                 return CodeInterpreterResponse(
-                    content="Error in CodeInterpreterSession(agenerate_response): " f"{e.__class__.__name__}  - {e}"
+                    content="Error in CodeInterpreterSession(agenerate_response): " f"{e.__class__.__name__}  - {e}",
+                    agent_name=self.brain.current_agent,
                 )
             else:
                 return CodeInterpreterResponse(
                     content="Sorry, something went while generating your response."
-                    "Please try again or restart the session."
+                    "Please try again or restart the session.",
+                    agent_name=self.brain.current_agent,
                 )
 
     def generate_response_stream(

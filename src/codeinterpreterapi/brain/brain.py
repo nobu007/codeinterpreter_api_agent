@@ -1,5 +1,7 @@
+import traceback
 from typing import Any, List, Optional, Union
 
+from gui_agent_loop_core.schema.schema import AgentName
 from langchain.agents import AgentExecutor
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.runnables.utils import Input, Output
@@ -14,13 +16,6 @@ from codeinterpreterapi.thoughts.thoughts import CodeInterpreterToT
 from codeinterpreterapi.tools.tools import CodeInterpreterTools
 
 
-class AgentEnum:
-    agent_executor = "agent_executor"
-    llm_planner = "llm_planner"
-    supervisor = "supervisor"
-    thought = "thought"
-
-
 class CodeInterpreterBrain(Runnable):
     AGENT_SCORE_MAX = 100
     AGENT_SCORE_MIN = -100
@@ -30,9 +25,10 @@ class CodeInterpreterBrain(Runnable):
         # codebox = CodeBox(requirements=settings.CUSTOM_PACKAGES)
         # self.ci_params.codebox = codebox
         self.ci_params.tools = CodeInterpreterTools(self.ci_params).get_all_tools()
+        self.verbose = self.ci_params.verbose
 
         # brain logic vals
-        self.current_agent: AgentEnum = AgentEnum.agent_executor
+        self.current_agent: AgentName = AgentName.AGENT_EXECUTOR
         self.current_agent_score: int = 0
 
         # agents
@@ -69,17 +65,18 @@ class CodeInterpreterBrain(Runnable):
         self.thought = CodeInterpreterToT.get_runnable_tot_chain(ci_params=self.ci_params)
 
     def prepare_input(self, input: Input):
-        if self.current_agent == AgentEnum.agent_executor:
+        ca = self.current_agent
+        if ca == AgentName.AGENT_EXECUTOR:
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
-        elif self.current_agent == AgentEnum.llm_planner:
+        elif ca == AgentName.LLM_PLANNER:
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
-        elif self.current_agent == AgentEnum.supervisor:
+        elif ca == AgentName.SUPERVISOR:
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
         else:
-            # thought
+            # ca == AgentName.THOUGHT
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
         return input
@@ -87,15 +84,23 @@ class CodeInterpreterBrain(Runnable):
     def run(self, input: Input) -> Output:
         self.update_next_agent()
         input = self.prepare_input(input)
-        if self.current_agent == AgentEnum.agent_executor:
-            output = self.agent_executor.invoke(input)
-        elif self.current_agent == AgentEnum.llm_planner:
-            output = self.llm_planner.invoke(input)
-        elif self.current_agent == AgentEnum.supervisor:
-            output = self.supervisor.invoke(input)
-        else:
-            # thought
-            output = self.thought.invoke(input)
+        print("Brain run self.current_agent=", self.current_agent)
+        try:
+            ca = self.current_agent
+            if ca == AgentName.AGENT_EXECUTOR:
+                output = self.agent_executor.invoke(input)
+            elif ca == AgentName.LLM_PLANNER:
+                output = self.llm_planner.invoke(input)
+            elif ca == AgentName.SUPERVISOR:
+                output = self.supervisor.invoke(input)
+            else:
+                # ca == AgentName.THOUGHT
+                output = self.thought.invoke(input)
+        except Exception as e:
+            if self.verbose:
+                traceback.print_exc()
+            output = "Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
+
         self.update_agent_score()
         if isinstance(output, str):
             output = {"output": output}
@@ -136,18 +141,18 @@ class CodeInterpreterBrain(Runnable):
         print("CodeInterpreterBrain update_next_agent=", self.current_agent)
 
     def use_next_agent(self):
-        current_agent = self.current_agent
-        if current_agent == AgentEnum.agent_executor:
-            return AgentEnum.llm_planner
-        elif current_agent == AgentEnum.llm_planner:
-            return AgentEnum.supervisor
-        elif current_agent == AgentEnum.supervisor:
-            return AgentEnum.thought
+        ca = self.current_agent
+        if ca == AgentName.AGENT_EXECUTOR:
+            return AgentName.LLM_PLANNER
+        elif ca == AgentName.LLM_PLANNER:
+            return AgentName.SUPERVISOR
+        elif ca == AgentName.SUPERVISOR:
+            return AgentName.THOUGHT
         else:
             # thought -> agent_executor
-            return AgentEnum.agent_executor
+            return AgentName.AGENT_EXECUTOR
 
-    def use_agent(self, new_agent: AgentEnum):
+    def use_agent(self, new_agent: AgentName):
         print("CodeInterpreterBrain use_agent=", new_agent)
         self.current_agent = new_agent
 
@@ -165,14 +170,14 @@ def test():
     brain = CodeInterpreterBrain(ci_params)
 
     # # try1: agent_executor
-    brain.use_agent(AgentEnum.agent_executor)
+    brain.use_agent(AgentName.AGENT_EXECUTOR)
     # input_dict = {"input": "please exec print('test output')"}
     # result = brain.invoke(input_dict)
     # print("result=", result)
     # assert "test output" in result["output"]
 
     # # try2: llm_planner
-    brain.use_agent(AgentEnum.llm_planner)
+    brain.use_agent(AgentName.LLM_PLANNER)
     # input_dict = {
     #     "input": "please exec print('test output')",
     #     "intermediate_steps": "",
@@ -186,7 +191,7 @@ def test():
     input_dict = {
         "input": "please exec print('test output')",
     }
-    brain.use_agent(AgentEnum.supervisor)
+    brain.use_agent(AgentName.SUPERVISOR)
     result = brain.invoke(input_dict)
     print("result=", result)
     # assert (
@@ -197,7 +202,7 @@ def test():
     input_dict = {
         "input": "please exec print('test output')",
     }
-    brain.use_agent(AgentEnum.thought)
+    brain.use_agent(AgentName.THOUGHT)
     result = brain.invoke(input_dict)
     print("result=", result)
     assert "test output" in result["output"]

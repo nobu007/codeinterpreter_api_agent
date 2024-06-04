@@ -127,7 +127,7 @@ class CodeInterpreterResponse(AIMessage):
         return self.__repr__()
 
     def __repr__(self) -> str:
-        return f"CodeInterpreterResponse(content={self.content}, files={self.files}, agent_name={self.agent_name})"
+        return f"CodeInterpreterResponse(files={self.files}, agent_name={self.agent_name}, content={self.content})"
 
 
 class SessionStatus(CodeBoxStatus):
