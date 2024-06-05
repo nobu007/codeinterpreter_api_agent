@@ -6,7 +6,7 @@ from langchain_core.runnables import Runnable
 
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
-from codeinterpreterapi.utils.output_parser import CustomOutputParser
+from codeinterpreterapi.utils.output_parser import PlannerSingleOutputParser
 from codeinterpreterapi.utils.runnable import create_complement_input
 
 
@@ -46,7 +46,7 @@ class CodeInterpreterPlanner:
             | prompt
             | ci_params.llm_fast
             # | StrOutputParser()
-            | CustomOutputParser()
+            | PlannerSingleOutputParser()
         )
 
         # agent
