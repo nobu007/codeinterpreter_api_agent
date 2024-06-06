@@ -19,9 +19,9 @@ def load_agent_executor(ci_params: CodeInterpreterParams) -> AgentExecutor:
     Returns:
         ChainExecutor
     """
-    input_variables = ["previous_steps", "current_step", "agent_scratchpad", "tools", "tool_names"]
-    print("input_variables=", input_variables)
     prompt = create_structured_chat_agent_prompt(ci_params.is_ja)
+    input_variables = prompt.input_variables
+    print("load_agent_executor prompt.input_variables=", input_variables)
     agent = create_structured_chat_agent(
         llm=ci_params.llm_smart,
         tools=ci_params.tools,
@@ -31,7 +31,6 @@ def load_agent_executor(ci_params: CodeInterpreterParams) -> AgentExecutor:
         # suffix=suffix,
         prompt=prompt,
         # format_instructions=format_instructions,
-        # input_variables=input_variables,
         # memory_prompts = memory_prompts,
     )
 

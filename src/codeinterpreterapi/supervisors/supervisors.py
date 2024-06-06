@@ -30,6 +30,8 @@ class CodeInterpreterSupervisor:
             prompt_name += "_ja"
         # plan_agent = RunnableAgent(runnable=planner)
         # prompt = hub.pull("nobu/code_writer:0c56967d")
+        input_variables = exec_prompt.input_variables
+        print("choose_supervisor prompt.input_variables=", input_variables)
 
         # exec_agent
         # exec_prompt = hub.pull("nobu/code_writer:0c56967d")

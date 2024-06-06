@@ -45,6 +45,8 @@ class MyToTChain(ToTChain):
 
     def initialize_thought_generator(self):
         self.thought_generator = self.tot_strategy_class(llm=self.llm, c=self.c, verbose=self.verbose_llm)
+        input_variables = self.thought_generator.prompt.input_variables
+        print("initialize_thought_generator prompt.input_variables=", input_variables)
 
     @classmethod
     def from_llm(cls, llm: BaseLanguageModel, **kwargs: Any) -> ToTChain:

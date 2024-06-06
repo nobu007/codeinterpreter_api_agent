@@ -51,7 +51,7 @@ class CodeInterpreterPlanner:
 
         # agent
         # planner_agent = create_react_agent(ci_params.llm_fast, ci_params.tools, prompt)
-        print("prompt.input_variables=", prompt.input_variables)
+        print("choose_planner prompt.input_variables=", prompt.input_variables)
         remapped_inputs = create_complement_input(prompt).invoke({})
         agent = RunnableAgent(runnable=runnable, input_keys=list(remapped_inputs.keys()))
 
