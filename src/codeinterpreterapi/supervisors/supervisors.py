@@ -40,7 +40,7 @@ class CodeInterpreterSupervisor:
         # exec_runnable = exec_prompt | ci_params.llm_fast | CustomOutputParser()
         # remapped_inputs = create_complement_input(exec_prompt).invoke({})
         # exec_agent = RunnableAgent(runnable=exec_runnable, input_keys=list(remapped_inputs.keys()))
-        exec_agent = create_tool_calling_agent(ci_params.llm, ci_params.tools, exec_prompt)
+        exec_agent = create_tool_calling_agent(ci_params.llm_fast, ci_params.tools, exec_prompt)
 
         # plan_chain
         agent_executor = AgentExecutor(agent=exec_agent, tools=ci_params.tools, verbose=ci_params.verbose)
