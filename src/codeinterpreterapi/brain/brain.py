@@ -47,11 +47,7 @@ class CodeInterpreterBrain(Runnable):
         self.initialize_thought()
 
     def initialize_agent_executor(self):
-        is_experimental = True
-        if is_experimental:
-            self.agent_executor = CodeInterpreterAgent.create_agent_and_executor_experimental(ci_params=self.ci_params)
-        else:
-            self.agent_executor = CodeInterpreterAgent.create_agent_executor_lcel(ci_params=self.ci_params)
+        self.agent_executor = CodeInterpreterAgent.choose_agent_executor(ci_params=self.ci_params)
 
     def initialize_llm_planner(self):
         self.llm_planner = CodeInterpreterPlanner.choose_planner(ci_params=self.ci_params)
