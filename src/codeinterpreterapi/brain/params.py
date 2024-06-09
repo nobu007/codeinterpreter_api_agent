@@ -5,6 +5,7 @@ from langchain.base_language import BaseLanguageModel
 from langchain.callbacks.base import Callbacks
 from langchain.tools import BaseTool
 from langchain_core.pydantic_v1 import BaseModel
+from langchain_core.runnables import Runnable
 from langchain_core.tools import tool
 
 
@@ -24,10 +25,11 @@ def test_multiply(first: str, second: str) -> str:
 
 class CodeInterpreterParams(BaseModel):
     codebox: Optional[CodeBox] = None
-    llm: Optional[BaseLanguageModel] = None
-    llm_fast: Optional[BaseLanguageModel] = None
-    llm_smart: Optional[BaseLanguageModel] = None
-    llm_local: Optional[BaseLanguageModel] = None
+    llm: Optional[Runnable] = None
+    llm_fast: Optional[Runnable] = None
+    llm_smart: Optional[Runnable] = None
+    llm_local: Optional[Runnable] = None
+    llm_switcher: Optional[Runnable] = None
     tools: Optional[List[BaseTool]] = []
     callbacks: Optional[Callbacks] = None
     verbose: Optional[bool] = False
@@ -37,7 +39,9 @@ class CodeInterpreterParams(BaseModel):
     @classmethod
     def get_test_params(cls, llm: BaseLanguageModel):
         tools = [test_plus, test_multiply]
-        return CodeInterpreterParams(llm=llm, tools=tools, llm_fast=llm, llm_smart=llm, llm_local=llm, verbose=True)
+        return CodeInterpreterParams(
+            llm=llm, tools=tools, llm_fast=llm, llm_smart=llm, llm_local=llm, llm_switcher=llm, verbose=True
+        )
 
     class Config:
         # for CodeBox

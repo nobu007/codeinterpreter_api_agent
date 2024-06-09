@@ -12,6 +12,7 @@ from langchain_community.chat_message_histories.postgres import PostgresChatMess
 from langchain_community.chat_message_histories.redis import RedisChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
+from langchain_core.runnables import Runnable
 from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.brain.brain import CodeInterpreterBrain
@@ -50,11 +51,13 @@ class CodeInterpreterSession:
         llm_fast: BaseLanguageModel = CodeInterpreterLlm.get_llm_fast()
         llm_smart: BaseLanguageModel = CodeInterpreterLlm.get_llm_smart()
         llm_local: BaseLanguageModel = CodeInterpreterLlm.get_llm_local()
+        llm_switcher: Runnable = CodeInterpreterLlm.get_llm_switcher()
         self.ci_params = CodeInterpreterParams(
             llm=llm,
             llm_fast=llm_fast,
             llm_smart=llm_smart,
             llm_local=llm_local,
+            llm_switcher=llm_switcher,
             tools=additional_tools,
             callbacks=callbacks,
             verbose=self.verbose,

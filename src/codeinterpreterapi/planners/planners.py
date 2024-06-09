@@ -44,7 +44,7 @@ class CodeInterpreterPlanner:
         runnable = (
             create_complement_input(prompt)
             | prompt
-            | ci_params.llm_fast
+            | ci_params.llm_switcher
             # | StrOutputParser()
             | PlannerSingleOutputParser()
         )

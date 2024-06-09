@@ -46,7 +46,7 @@ class CodeInterpreterToT(RunnableSerializable):
     @classmethod
     def get_runnable_tot_chain(cls, ci_params: CodeInterpreterParams, is_simple: bool = False):
         # ToTChainのインスタンスを作成
-        tot_chain = cls(llm=ci_params.llm, is_ja=ci_params.is_ja, is_simple=is_simple)
+        tot_chain = cls(llm=ci_params.llm_switcher, is_ja=ci_params.is_ja, is_simple=is_simple)
         return tot_chain
 
 

@@ -38,7 +38,7 @@ class CodeInterpreterAgent:
         prompt = hub.pull("hwchase17/openai-functions-agent")
 
         # agent
-        agent = create_tool_calling_agent(ci_params.llm_fast, ci_params.tools, prompt)
+        agent = create_tool_calling_agent(ci_params.llm_switcher, ci_params.tools, prompt)
 
         # agent_executor
         agent_executor = AgentExecutor(
@@ -58,7 +58,7 @@ class CodeInterpreterAgent:
 
     @staticmethod
     def choose_single_chat_agent(ci_params: CodeInterpreterParams) -> BaseSingleActionAgent:
-        llm = ci_params.llm
+        llm = ci_params.llm_switcher
         tools = ci_params.tools
         is_ja = ci_params.is_ja
         system_message = settings.SYSTEM_MESSAGE if is_ja else settings.SYSTEM_MESSAGE_JA

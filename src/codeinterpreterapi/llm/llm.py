@@ -1,6 +1,7 @@
-import os
+from typing import List
 
 from langchain.chat_models.base import BaseChatModel
+from langchain_core.runnables import Runnable
 
 from codeinterpreterapi.config import settings
 
@@ -9,6 +10,7 @@ class CodeInterpreterLlm:
     @classmethod
     def get_llm(cls, model: str = settings.MODEL) -> BaseChatModel:
         max_output_tokens = 1024 * 4
+        max_retries = 0
         if (
             settings.AZURE_OPENAI_API_KEY
             and settings.AZURE_API_BASE
@@ -26,6 +28,7 @@ class CodeInterpreterLlm:
                 max_retries=settings.MAX_RETRY,
                 timeout=settings.REQUEST_TIMEOUT,
                 max_tokens=max_output_tokens,
+                # max_retries=max_retries,
             )  # type: ignore
         if settings.OPENAI_API_KEY:
             from langchain_openai import ChatOpenAI
@@ -37,6 +40,7 @@ class CodeInterpreterLlm:
                 temperature=settings.TEMPERATURE,
                 max_retries=settings.MAX_RETRY,
                 max_tokens=max_output_tokens,
+                # max_retries=max_retries,
             )  # type: ignore
         if settings.GEMINI_API_KEY and "gemini" in model:
             from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
@@ -48,6 +52,7 @@ class CodeInterpreterLlm:
                 temperature=settings.TEMPERATURE,
                 google_api_key=settings.GEMINI_API_KEY,
                 max_output_tokens=max_output_tokens,
+                max_retries=max_retries,
             )
         if settings.ANTHROPIC_API_KEY and "claude" in model:
             from langchain_anthropic import ChatAnthropic  # type: ignore
@@ -59,6 +64,7 @@ class CodeInterpreterLlm:
                 temperature=settings.TEMPERATURE,
                 anthropic_api_key=settings.ANTHROPIC_API_KEY,
                 max_tokens=max_output_tokens,
+                max_retries=max_retries,
             )
         raise ValueError("Please set the API key for model=", model)
 
@@ -77,30 +83,21 @@ class CodeInterpreterLlm:
         print("get_llm_local=", model)
         return cls.get_llm(model=model)
 
+    @classmethod
+    def get_llms(cls, model: str = settings.MODEL_LOCAL) -> List[BaseChatModel]:
+        llms = []
+        llms.append(cls.get_llm(model))
+        llms.append(cls.get_llm_fast())
+        llms.append(cls.get_llm_smart())
+        return llms
+
+    @classmethod
+    def get_llm_switcher(cls, model: str = settings.MODEL_LOCAL) -> Runnable:
+        llms = cls.get_llms(model)
+        llm_switcher = llms[0]
+        llm_switcher = llm_switcher.with_fallbacks(llms[1:])
+        return llm_switcher
+
 
 def prepare_test_llm():
-    model = "gemini-1.5-flash-latest"
-    # model = "gemini-1.5-pro-latest"
-    # model = "gemini-1.0-pro"
-    # model = "claude-3-haiku-20240307"
-    # model = "claude-3-sonnet-20240229"
-    if "gemini" in model:
-        from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
-
-        llm = ChatGoogleGenerativeAI(
-            model=model,
-            temperature=0.1,
-            google_api_key=os.environ.get("GEMINI_API_KEY"),
-            max_output_tokens=1024 * 4,
-        )
-    else:
-        from langchain_anthropic import ChatAnthropic  # type: ignore
-
-        llm = ChatAnthropic(
-            model_name=model,
-            temperature=0.1,
-            anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"),
-            max_tokens=1024 * 4,
-        )
-
-    return llm
+    return CodeInterpreterLlm.get_llm_switcher()
