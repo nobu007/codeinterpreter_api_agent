@@ -4,6 +4,7 @@ from codeboxapi import CodeBox  # type: ignore
 from langchain.base_language import BaseLanguageModel
 from langchain.callbacks.base import Callbacks
 from langchain.tools import BaseTool
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.pydantic_v1 import BaseModel
 from langchain_core.runnables import Runnable
 from langchain_core.tools import tool
@@ -25,11 +26,12 @@ def test_multiply(first: str, second: str) -> str:
 
 class CodeInterpreterParams(BaseModel):
     codebox: Optional[CodeBox] = None
-    llm: Optional[Runnable] = None
+    llm_lite: Optional[Runnable] = None
     llm_fast: Optional[Runnable] = None
     llm_smart: Optional[Runnable] = None
     llm_local: Optional[Runnable] = None
-    llm_switcher: Optional[Runnable] = None
+    llm: Optional[Runnable] = None
+    llm_tools: Optional[Runnable] = None
     tools: Optional[List[BaseTool]] = []
     callbacks: Optional[Callbacks] = None
     verbose: Optional[bool] = False
@@ -37,10 +39,17 @@ class CodeInterpreterParams(BaseModel):
     is_ja: Optional[bool] = True
 
     @classmethod
-    def get_test_params(cls, llm: BaseLanguageModel):
+    def get_test_params(cls, llm: BaseLanguageModel, llm_tools: BaseChatModel = None):
         tools = [test_plus, test_multiply]
         return CodeInterpreterParams(
-            llm=llm, tools=tools, llm_fast=llm, llm_smart=llm, llm_local=llm, llm_switcher=llm, verbose=True
+            llm_lite=llm,
+            llm_fast=llm,
+            llm_smart=llm,
+            llm_local=llm,
+            llm=llm,
+            llm_tools=llm_tools,
+            tools=tools,
+            verbose=True,
         )
 
     class Config:

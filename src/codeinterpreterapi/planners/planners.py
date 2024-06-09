@@ -44,7 +44,7 @@ class CodeInterpreterPlanner:
         runnable = (
             create_complement_input(prompt)
             | prompt
-            | ci_params.llm_switcher
+            | ci_params.llm
             # | StrOutputParser()
             | PlannerSingleOutputParser()
         )
@@ -95,8 +95,8 @@ class CodeInterpreterPlanner:
 
 def test():
     sample = "ステップバイステップで2*5+2を計算して。"
-    llm = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm)
+    llm, llm_tools = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     result = planner.invoke({"input": sample, "agent_scratchpad": ""})
     print("result=", result)

@@ -23,7 +23,7 @@ def load_agent_executor(ci_params: CodeInterpreterParams) -> AgentExecutor:
     input_variables = prompt.input_variables
     print("load_agent_executor prompt.input_variables=", input_variables)
     agent = create_structured_chat_agent(
-        llm=ci_params.llm_switcher,
+        llm=ci_params.llm,
         tools=ci_params.tools,
         # callback_manager=callback_manager,
         # output_parser=output_parser,
@@ -39,8 +39,8 @@ def load_agent_executor(ci_params: CodeInterpreterParams) -> AgentExecutor:
 
 
 def test():
-    llm = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm)
+    llm, llm_tools = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
     agent_executor = load_agent_executor(ci_params)
     test_input = "pythonで円周率を表示するプログラムを実行してください。"
     agent_executor_output = agent_executor.invoke({"input": test_input})

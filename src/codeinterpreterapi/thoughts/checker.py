@@ -3,8 +3,8 @@ from typing import Optional, Tuple
 
 import spacy
 from langchain.prompts import PromptTemplate
-from langchain.schema import BaseMemory
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
+from langchain_core.runnables import Runnable
 from langchain_experimental.tot.checker import ToTChecker
 from langchain_experimental.tot.thought import ThoughtValidity
 from spacy import Language
@@ -163,7 +163,7 @@ checker_support_prompt_ja = """
 
 
 class MyToTChecker(ToTChecker):
-    llm: Optional[BaseMemory] = None
+    llm: Optional[Runnable] = None
     prompt: PromptTemplate = PromptTemplate(
         input_variables=["problem_description", "thoughts", "support_result"],
         template=checker_prompt_ja,
@@ -241,7 +241,8 @@ class MyToTChecker(ToTChecker):
 # Testing the MyChecker class above:
 #######
 def test_checker():
-    tot_chain = create_tot_chain_from_llm(prepare_test_llm())
+    llm, llm_tools = prepare_test_llm()
+    tot_chain = create_tot_chain_from_llm(llm)
     checker = tot_chain.checker
     assert (
         checker.evaluate(sudoku_problem_description, ("3,x,1,2|1,x,3,x|x,1,x,3|4,x,x,1",))

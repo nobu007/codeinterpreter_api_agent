@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 from langchain.prompts.base import BasePromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableSequence
@@ -43,9 +43,9 @@ def create_complement_input(prompt: Union[BasePromptTemplate, RunnableSequence],
         if isinstance(prompt, BasePromptTemplate):
             input_variables = prompt.input_variables
         elif isinstance(prompt, RunnableSequence):
-            input_variables = prompt.first.input_variables
+            input_variables = get_input_variables_from_runnable_sequence(prompt)
         else:
-            raise ValueError("prompt must be either BasePromptTemplate or Chain")
+            raise ValueError("No input_variables for", prompt)
 
         for key in input_variables:
             if key not in complemented_dict:
@@ -55,3 +55,21 @@ def create_complement_input(prompt: Union[BasePromptTemplate, RunnableSequence],
         return complemented_dict
 
     return RunnableLambda(complement_input)
+
+
+def get_input_variables_from_runnable_sequence(runnable_sequence: RunnableSequence) -> List[str]:
+    """
+    RunnableSequenceオブジェクトから入力変数を取得します。
+
+    Args:
+        runnable_sequence (RunnableSequence): 入力変数を取得するRunnableSequenceオブジェクト。
+
+    Returns:
+        input_variables (List[str]): RunnableSequenceオブジェクトの入力変数のリスト。
+    """
+    for runnable in runnable_sequence.runnable_list:
+        if isinstance(runnable, BasePromptTemplate):
+            return runnable.input_variables
+        elif hasattr(runnable, "input_variables"):
+            return runnable.input_variables
+    raise ValueError("The first element of RunnableSequence must have 'input_variables'")

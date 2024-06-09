@@ -23,7 +23,8 @@ class CodeInterpreterAPISettings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[SecretStr] = None
 
     # LLM Settings
-    MODEL: str = "claude-3-haiku-20240307"
+    MODEL: str = "claude-3-haiku-20240307"  # For all agents
+    MODEL_LITE: str = "claude-3-haiku-20240307"
     MODEL_FAST: str = "claude-3-haiku-20240307"
     MODEL_SMART: str = "claude-3-haiku-20240307"
     MODEL_LOCAL: str = "claude-3-haiku-20240307"

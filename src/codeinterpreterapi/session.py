@@ -36,7 +36,6 @@ def _handle_deprecated_kwargs(kwargs: dict) -> None:
 class CodeInterpreterSession:
     def __init__(
         self,
-        llm: Optional[BaseLanguageModel] = None,
         additional_tools: list[BaseTool] = None,
         callbacks: Callbacks = None,
         is_local: bool = True,
@@ -47,17 +46,19 @@ class CodeInterpreterSession:
             additional_tools = []
         _handle_deprecated_kwargs(kwargs)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
-        llm: BaseLanguageModel = llm or CodeInterpreterLlm.get_llm()
+        llm_lite: BaseLanguageModel = CodeInterpreterLlm.get_llm_lite()
         llm_fast: BaseLanguageModel = CodeInterpreterLlm.get_llm_fast()
         llm_smart: BaseLanguageModel = CodeInterpreterLlm.get_llm_smart()
         llm_local: BaseLanguageModel = CodeInterpreterLlm.get_llm_local()
-        llm_switcher: Runnable = CodeInterpreterLlm.get_llm_switcher()
+        llm: Runnable = CodeInterpreterLlm.get_llm_switcher()
+        llm_tools: Runnable = CodeInterpreterLlm.get_llm_switcher_tools()
         self.ci_params = CodeInterpreterParams(
-            llm=llm,
+            llm_lite=llm_lite,
             llm_fast=llm_fast,
             llm_smart=llm_smart,
             llm_local=llm_local,
-            llm_switcher=llm_switcher,
+            llm=llm,
+            llm_tools=llm_tools,
             tools=additional_tools,
             callbacks=callbacks,
             verbose=self.verbose,

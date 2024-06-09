@@ -38,7 +38,7 @@ class CodeInterpreterAgent:
         prompt = hub.pull("hwchase17/openai-functions-agent")
 
         # agent
-        agent = create_tool_calling_agent(ci_params.llm_switcher, ci_params.tools, prompt)
+        agent = create_tool_calling_agent(ci_params.llm_tools, ci_params.tools, prompt)
 
         # agent_executor
         agent_executor = AgentExecutor(
@@ -58,7 +58,7 @@ class CodeInterpreterAgent:
 
     @staticmethod
     def choose_single_chat_agent(ci_params: CodeInterpreterParams) -> BaseSingleActionAgent:
-        llm = ci_params.llm_switcher
+        llm = ci_params.llm
         tools = ci_params.tools
         is_ja = ci_params.is_ja
         system_message = settings.SYSTEM_MESSAGE if is_ja else settings.SYSTEM_MESSAGE_JA
@@ -126,8 +126,8 @@ class CodeInterpreterAgent:
 
 def test():
     sample = "pythonで円周率を表示するプログラムを実行してください。"
-    llm = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm)
+    llm, llm_tools = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
     ci_params.tools = []
     ci_params.tools = CodeInterpreterTools(ci_params).get_all_tools()
 

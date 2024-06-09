@@ -69,6 +69,11 @@ class CodeInterpreterLlm:
         raise ValueError("Please set the API key for model=", model)
 
     @classmethod
+    def get_llm_lite(cls, model: str = settings.MODEL_LITE) -> BaseChatModel:
+        print("get_llm_lite=", model)
+        return cls.get_llm(model=model)
+
+    @classmethod
     def get_llm_fast(cls, model: str = settings.MODEL_FAST) -> BaseChatModel:
         print("get_llm_fast=", model)
         return cls.get_llm(model=model)
@@ -84,6 +89,27 @@ class CodeInterpreterLlm:
         return cls.get_llm(model=model)
 
     @classmethod
+    def get_llm_switcher(cls, model: str = settings.MODEL_LOCAL) -> Runnable:
+        llms = cls.get_llms(model)
+        llm_switcher = llms[0]
+        fallback_llms = llms[1:]
+        llm_switcher = llm_switcher.with_fallbacks(fallback_llms)
+        return llm_switcher
+
+    @classmethod
+    def get_llm_switcher_tools(cls, model: str = settings.MODEL_LOCAL) -> Runnable:
+        llms = cls.get_llms(model)
+        llms_tools = []
+        for llm in llms:
+            if hasattr(llm, "bind_tools"):
+                llms_tools.append(llm)
+
+        llm_tools = llms_tools[0]
+        fallback_llms = llms_tools[1:]
+        llm_tools = llm_tools.with_fallbacks(fallback_llms)
+        return llm_tools
+
+    @classmethod
     def get_llms(cls, model: str = settings.MODEL_LOCAL) -> List[BaseChatModel]:
         llms = []
         llms.append(cls.get_llm(model))
@@ -91,13 +117,6 @@ class CodeInterpreterLlm:
         llms.append(cls.get_llm_smart())
         return llms
 
-    @classmethod
-    def get_llm_switcher(cls, model: str = settings.MODEL_LOCAL) -> Runnable:
-        llms = cls.get_llms(model)
-        llm_switcher = llms[0]
-        llm_switcher = llm_switcher.with_fallbacks(llms[1:])
-        return llm_switcher
-
 
 def prepare_test_llm():
-    return CodeInterpreterLlm.get_llm_switcher()
+    return CodeInterpreterLlm.get_llm_switcher(), CodeInterpreterLlm.get_llm_switcher_tools()

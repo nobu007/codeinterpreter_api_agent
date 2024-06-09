@@ -14,6 +14,7 @@ class CodeInterpreterToT(RunnableSerializable):
     tot_chain: MyToTChain = None
 
     def __init__(self, llm=None, is_ja=True, is_simple=False):
+        print("XXX llm=", llm)
         super().__init__()
         self.tot_chain = create_tot_chain_from_llm(llm=llm, is_ja=is_ja, is_simple=is_simple)
 
@@ -44,15 +45,15 @@ class CodeInterpreterToT(RunnableSerializable):
         raise NotImplementedError("Async not implemented yet")
 
     @classmethod
-    def get_runnable_tot_chain(cls, ci_params: CodeInterpreterParams, is_simple: bool = False):
+    def get_runnable_tot_chain(cls, ci_params: CodeInterpreterParams, is_simple: bool = False) -> RunnableSerializable:
         # ToTChainのインスタンスを作成
-        tot_chain = cls(llm=ci_params.llm_switcher, is_ja=ci_params.is_ja, is_simple=is_simple)
+        tot_chain = cls(llm=ci_params.llm_tools, is_ja=ci_params.is_ja, is_simple=is_simple)
         return tot_chain
 
 
 def test():
-    llm = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm)
+    llm, llm_tools = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
     tot_chain = CodeInterpreterToT.get_runnable_tot_chain(ci_params=ci_params)
     tot_chain.invoke({"input": sample2})
 

@@ -3,9 +3,10 @@ import os
 import platform
 
 from langchain import hub
-from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain.agents import AgentExecutor
 from langchain_core.runnables import Runnable
 
+from codeinterpreterapi.agents.tool_calling.create_tool_calling_agent import create_tool_calling_agent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
@@ -36,11 +37,10 @@ class CodeInterpreterSupervisor:
         # exec_agent
         # exec_prompt = hub.pull("nobu/code_writer:0c56967d")
         exec_prompt = hub.pull("hwchase17/openai-tools-agent")
-        # exec_prompt = create_complement_input(exec_prompt) | exec_prompt
         # exec_runnable = exec_prompt | ci_params.llm_fast | CustomOutputParser()
         # remapped_inputs = create_complement_input(exec_prompt).invoke({})
         # exec_agent = RunnableAgent(runnable=exec_runnable, input_keys=list(remapped_inputs.keys()))
-        exec_agent = create_tool_calling_agent(ci_params.llm_switcher, ci_params.tools, exec_prompt)
+        exec_agent = create_tool_calling_agent(ci_params.llm_tools, ci_params.tools, exec_prompt)
 
         # plan_chain
         agent_executor = AgentExecutor(agent=exec_agent, tools=ci_params.tools, verbose=ci_params.verbose)
@@ -50,11 +50,11 @@ class CodeInterpreterSupervisor:
 
 def test():
     sample = "ステップバイステップで2*5+2を計算して。"
-    llm = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm)
+    llm, llm_tools = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     supervisor = CodeInterpreterSupervisor.choose_supervisor(planner=planner, ci_params=ci_params)
-    result = supervisor.invoke({"input": sample, "agent_scratchpad": ""})
+    result = supervisor.invoke({"input": sample})
     print("result=", result)
 
 

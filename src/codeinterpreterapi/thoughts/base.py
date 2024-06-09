@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Type
 
 from langchain.base_language import BaseLanguageModel
 from langchain_core.callbacks.manager import AsyncCallbackManagerForChainRun, CallbackManagerForChainRun
+from langchain_core.runnables import Runnable
 from langchain_experimental.pydantic_v1 import Extra
 from langchain_experimental.tot.base import ToTChain
 from langchain_experimental.tot.checker import ToTChecker
@@ -19,7 +20,7 @@ class MyToTChain(ToTChain):
     Chain implementing the Tree of Thought (ToT).
     """
 
-    llm: BaseLanguageModel
+    llm: Runnable
     """
     Language model to use. It must be set to produce different variations for
     the same prompt.

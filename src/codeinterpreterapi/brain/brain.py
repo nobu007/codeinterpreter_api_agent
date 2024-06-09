@@ -53,9 +53,8 @@ class CodeInterpreterBrain(Runnable):
         self.llm_planner = CodeInterpreterPlanner.choose_planner(ci_params=self.ci_params)
 
     def initialize_supervisor(self):
-        self.supervisor = CodeInterpreterSupervisor.choose_supervisor(
-            planner=self.llm_planner, ci_params=self.ci_params
-        )
+        planner = CodeInterpreterPlanner.choose_planner(ci_params=self.ci_params)
+        self.supervisor = CodeInterpreterSupervisor.choose_supervisor(planner=planner, ci_params=self.ci_params)
 
     def initialize_thought(self):
         self.thought = CodeInterpreterToT.get_runnable_tot_chain(ci_params=self.ci_params)
@@ -155,53 +154,56 @@ class CodeInterpreterBrain(Runnable):
 
 def test():
     settings.WORK_DIR = "/tmp"
-    llm = prepare_test_llm()
-    ci_params = CodeInterpreterParams(
-        llm=llm,
-        llm_fast=llm,
-        llm_smart=llm,
-        llm_local=llm,
-        verbose=True,
-    )
+    llm, llm_tools = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
     brain = CodeInterpreterBrain(ci_params)
 
-    # # try1: agent_executor
-    brain.use_agent(AgentName.AGENT_EXECUTOR)
-    # input_dict = {"input": "please exec print('test output')"}
-    # result = brain.invoke(input_dict)
-    # print("result=", result)
-    # assert "test output" in result["output"]
+    if False:
+        # try1: agent_executor
+        print("try1: agent_executor")
+        brain.use_agent(AgentName.AGENT_EXECUTOR)
+        input_dict = {"input": "please exec print('test output')"}
+        result = brain.invoke(input_dict)
+        print("result=", result)
+        assert "test output" in result["output"]
 
-    # # try2: llm_planner
-    brain.use_agent(AgentName.LLM_PLANNER)
-    # input_dict = {
-    #     "input": "please exec print('test output')",
-    #     "intermediate_steps": "",
-    # }
-    # result = brain.invoke(input_dict)
-    # print("result=", result)
-    # assert "python" == result.tool
-    # assert "test output" in result.tool_input
+    if False:
+        # try2: llm_planner
+        print("try2: llm_planner")
+        brain.use_agent(AgentName.LLM_PLANNER)
+        input_dict = {
+            "input": "please exec print('test output')",
+            "intermediate_steps": "",
+        }
+        result = brain.invoke(input_dict)
+        print("result=", result)
+        assert "python" == result.tool
+        assert "test output" in result.tool_input
 
-    # try3: supervisor
-    input_dict = {
-        "input": "please exec print('test output')",
-    }
-    brain.use_agent(AgentName.SUPERVISOR)
-    result = brain.invoke(input_dict)
-    print("result=", result)
-    # assert (
-    #     "test output" in result["output"]
-    # )  # TODO: refine logic. now returns "Pythonコードを実行して出力を確認する。"
+    if True:
+        # try3: supervisor
+        print("try3: supervisor")
+        sample = "ステップバイステップで2*5+2を計算して。"
+        input_dict = {
+            "input": sample,
+        }
+        brain.use_agent(AgentName.SUPERVISOR)
+        result = brain.invoke(input_dict)
+        print("result=", result)
+        # assert (
+        #     "test output" in result["output"]
+        # )  # TODO: refine logic. now returns "Pythonコードを実行して出力を確認する。"
 
-    # try4: thought
-    input_dict = {
-        "input": "please exec print('test output')",
-    }
-    brain.use_agent(AgentName.THOUGHT)
-    result = brain.invoke(input_dict)
-    print("result=", result)
-    assert "test output" in result["output"]
+    if True:
+        # try4: thought
+        print("try4: thought")
+        input_dict = {
+            "input": "please exec print('test output')",
+        }
+        brain.use_agent(AgentName.THOUGHT)
+        result = brain.invoke(input_dict)
+        print("result=", result)
+        assert "test output" in result["output"]
 
 
 if __name__ == "__main__":
