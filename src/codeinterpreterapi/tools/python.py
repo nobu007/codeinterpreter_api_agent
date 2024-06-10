@@ -1,8 +1,6 @@
 import base64
-import os
 import re
 import subprocess
-import tempfile
 from io import BytesIO
 from uuid import uuid4
 
@@ -13,6 +11,7 @@ from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.schema import CodeInput, File
+from codeinterpreterapi.utils.file_util import FileUtil
 
 
 class PythonTools:
@@ -47,21 +46,8 @@ class PythonTools:
 
         return tools
 
-    def _store_python_output_file(self, code):
-        if settings.PYTHON_OUT_FILE:
-            python_file_path = os.path.join(settings.WORK_DIR, settings.PYTHON_OUT_FILE)
-            with open(python_file_path, "w", encoding="utf-8") as python_file:
-                python_file.write(code)
-                return python_file_path
-        else:
-            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".py", dir=settings.WORK_DIR) as temp_file:
-                temp_file.write(code)
-                temp_file_path = temp_file.name
-                return temp_file_path
-        return None
-
     def _get_handler_local_command(self, code: str):
-        python_file_path = self._store_python_output_file(code)
+        python_file_path = FileUtil.write_python_file(code)
         command = f"cd src/codeinterpreterapi/invoke_tasks && invoke -c python run-code-file '{python_file_path}'"
         return command
 

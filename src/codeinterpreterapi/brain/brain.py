@@ -156,13 +156,17 @@ def test():
     settings.WORK_DIR = "/tmp"
     llm, llm_tools = prepare_test_llm()
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    ci_params.tools = []
+    ci_params.tools = CodeInterpreterTools(ci_params).get_all_tools()
     brain = CodeInterpreterBrain(ci_params)
 
-    if False:
+    if True:
         # try1: agent_executor
         print("try1: agent_executor")
         brain.use_agent(AgentName.AGENT_EXECUTOR)
-        input_dict = {"input": "please exec print('test output')"}
+        # sample = "ツールのpythonで円周率を表示するプログラムを実行してください。"
+        sample = "please exec print('test output')"
+        input_dict = {"input": sample}
         result = brain.invoke(input_dict)
         print("result=", result)
         assert "test output" in result["output"]
@@ -180,7 +184,7 @@ def test():
         assert "python" == result.tool
         assert "test output" in result.tool_input
 
-    if True:
+    if False:
         # try3: supervisor
         print("try3: supervisor")
         sample = "ステップバイステップで2*5+2を計算して。"
@@ -194,7 +198,7 @@ def test():
         #     "test output" in result["output"]
         # )  # TODO: refine logic. now returns "Pythonコードを実行して出力を確認する。"
 
-    if True:
+    if False:
         # try4: thought
         print("try4: thought")
         input_dict = {

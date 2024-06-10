@@ -1,11 +1,10 @@
-import os
-
 from langchain_core.tools import StructuredTool
 
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.schema import CodeInput
+from codeinterpreterapi.utils.file_util import FileUtil
 
 
 class CodeChecker:
@@ -33,21 +32,10 @@ class CodeChecker:
         return tools
 
     def _get_latest_code(self):
-        python_file_path = "/app/work/main.py"
-        if os.path.isfile(python_file_path):
-            with open(python_file_path, encoding="utf8") as f:
-                latest_code = f.readlines()
-                latest_code = latest_code.join("\n")
-                return latest_code
-        else:
-            return "no data"
+        return FileUtil.read_python_file()
 
     async def _aget_latest_code(self):
-        python_file_path = "/app/work/main.py"
-        if os.path.isfile(python_file_path):
-            return
-        else:
-            return "no data"
+        return FileUtil.read_python_file()
 
 
 def test():
@@ -57,7 +45,7 @@ def test():
     tools_instance = CodeChecker(ci_params=ci_params)
     result = tools_instance._get_latest_code()
     print("result=", result)
-    assert "no data" in result
+    assert "test output" in result
 
 
 if __name__ == "__main__":

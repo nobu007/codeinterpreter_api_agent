@@ -49,6 +49,7 @@ class CodeInterpreterAPISettings(BaseSettings):
     VERBOSE: bool = DEBUG
 
     # Environment
+    TEMP_DIR: str = "/tmp"
     WORK_DIR: str = "/app/work"
     PYTHON_OUT_FILE: str = "main.py"
 

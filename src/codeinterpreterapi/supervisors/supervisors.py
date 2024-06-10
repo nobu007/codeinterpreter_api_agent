@@ -29,27 +29,26 @@ class CodeInterpreterSupervisor:
         exec_prompt = hub.pull(prompt_name)
         if ci_params.is_ja:
             prompt_name += "_ja"
+
+        # TODO: use plan agent
         # plan_agent = RunnableAgent(runnable=planner)
-        # prompt = hub.pull("nobu/code_writer:0c56967d")
         input_variables = exec_prompt.input_variables
         print("choose_supervisor prompt.input_variables=", input_variables)
 
         # exec_agent
         # exec_prompt = hub.pull("nobu/code_writer:0c56967d")
         exec_prompt = hub.pull("hwchase17/openai-tools-agent")
-        # exec_runnable = exec_prompt | ci_params.llm_fast | CustomOutputParser()
-        # remapped_inputs = create_complement_input(exec_prompt).invoke({})
-        # exec_agent = RunnableAgent(runnable=exec_runnable, input_keys=list(remapped_inputs.keys()))
         exec_agent = create_tool_calling_agent(ci_params.llm_tools, ci_params.tools, exec_prompt)
 
-        # plan_chain
+        # agent_executor
         agent_executor = AgentExecutor(agent=exec_agent, tools=ci_params.tools, verbose=ci_params.verbose)
 
         return agent_executor
 
 
 def test():
-    sample = "ステップバイステップで2*5+2を計算して。"
+    # sample = "ステップバイステップで2*5+2を計算して。"
+    sample = "pythonで円周率を表示するプログラムを実行してください。"
     llm, llm_tools = prepare_test_llm()
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
