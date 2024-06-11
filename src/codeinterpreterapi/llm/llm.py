@@ -1,9 +1,44 @@
-from typing import List
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
+from google.ai.generativelanguage_v1beta.types import (
+    GenerateContentRequest,
+)
+from google.generativeai.types.content_types import FunctionDeclarationType  # type: ignore[import]
 from langchain.chat_models.base import BaseChatModel
+from langchain_core.messages import (
+    BaseMessage,
+)
 from langchain_core.runnables import Runnable
+from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
+from langchain_google_genai._common import SafetySettingDict
+from langchain_google_genai._function_utils import GeminiToolLike, _ToolConfigDict
 
 from codeinterpreterapi.config import settings
+
+
+class ChatGoogleGenerativeAIWrapper(ChatGoogleGenerativeAI):
+    def _prepare_request(
+        self,
+        messages: List[BaseMessage],
+        *,
+        stop: Optional[List[str]] = None,
+        tools: Optional[Sequence[GeminiToolLike]] = None,
+        functions: Optional[Sequence[FunctionDeclarationType]] = None,
+        safety_settings: Optional[SafetySettingDict] = None,
+        tool_config: Optional[Union[Dict, _ToolConfigDict]] = None,
+        generation_config: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[GenerateContentRequest, Dict[str, Any]]:
+        num_tokens = self.get_num_tokens_from_messages(messages=messages)
+        print("_prepare_request num_tokens=", num_tokens)
+        return super()._prepare_request(
+            messages,
+            stop=stop,
+            tools=tools,
+            functions=functions,
+            safety_settings=safety_settings,
+            tool_config=tool_config,
+            generation_config=generation_config,
+        )
 
 
 class CodeInterpreterLlm:
@@ -43,11 +78,9 @@ class CodeInterpreterLlm:
                 # max_retries=max_retries,
             )  # type: ignore
         if settings.GEMINI_API_KEY and "gemini" in model:
-            from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
-
             if "gemini" not in model:
                 print("Please set the gemini model in the settings.")
-            return ChatGoogleGenerativeAI(
+            return ChatGoogleGenerativeAIWrapper(
                 model=model,
                 temperature=settings.TEMPERATURE,
                 google_api_key=settings.GEMINI_API_KEY,
