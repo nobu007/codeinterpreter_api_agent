@@ -12,7 +12,7 @@ from langchain_community.chat_message_histories.postgres import PostgresChatMess
 from langchain_community.chat_message_histories.redis import RedisChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.brain.brain import CodeInterpreterBrain
@@ -52,6 +52,12 @@ class CodeInterpreterSession:
         llm_local: BaseLanguageModel = CodeInterpreterLlm.get_llm_local()
         llm: Runnable = CodeInterpreterLlm.get_llm_switcher()
         llm_tools: Runnable = CodeInterpreterLlm.get_llm_switcher_tools()
+
+        # runnable_config
+        configurable = {"session_id": "123"}  # TODO: set session_id
+        runnable_config = RunnableConfig(configurable=configurable)
+
+        # ci_params = {}
         self.ci_params = CodeInterpreterParams(
             llm_lite=llm_lite,
             llm_fast=llm_fast,
@@ -64,6 +70,7 @@ class CodeInterpreterSession:
             verbose=self.verbose,
             is_local=is_local,
             is_ja=is_ja,
+            runnable_config=runnable_config,
         )
         self.brain = CodeInterpreterBrain(self.ci_params)
         self.log("llm=" + str(llm))
@@ -232,7 +239,6 @@ class CodeInterpreterSession:
             print("user_request.content=", user_request.content)
             agent_scratchpad = ""
             input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
-
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             response = self.brain.invoke(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======

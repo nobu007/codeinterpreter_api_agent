@@ -20,7 +20,7 @@ class CodeInterpreterBrain(Runnable):
     AGENT_SCORE_MAX = 100
     AGENT_SCORE_MIN = -100
 
-    def __init__(self, ci_params: CodeInterpreterParams = CodeInterpreterParams()) -> None:
+    def __init__(self, ci_params: CodeInterpreterParams) -> None:
         self.ci_params = ci_params
         # codebox = CodeBox(requirements=settings.CUSTOM_PACKAGES)
         # self.ci_params.codebox = codebox
@@ -76,18 +76,18 @@ class CodeInterpreterBrain(Runnable):
                 del input['intermediate_steps']
         return input
 
-    def run(self, input: Input) -> Output:
+    def run(self, input: Input, runnable_config: Optional[RunnableConfig] = None) -> Output:
         self.update_next_agent()
         input = self.prepare_input(input)
         print("Brain run self.current_agent=", self.current_agent)
         try:
             ca = self.current_agent
             if ca == AgentName.AGENT_EXECUTOR:
-                output = self.agent_executor.invoke(input)
+                output = self.agent_executor.invoke(input, config=runnable_config)
             elif ca == AgentName.LLM_PLANNER:
                 output = self.llm_planner.invoke(input)
             elif ca == AgentName.SUPERVISOR:
-                output = self.supervisor.invoke(input)
+                output = self.supervisor.invoke(input, config=runnable_config)
             else:
                 # ca == AgentName.THOUGHT
                 output = self.thought.invoke(input)
@@ -105,7 +105,7 @@ class CodeInterpreterBrain(Runnable):
         return self.run(input)
 
     def invoke(self, input: Input, config: Optional[RunnableConfig] = None) -> Output:
-        return self.run(input)
+        return self.run(input, config)
 
     def batch(self, inputs: List[Output]) -> List[Output]:
         return [self.run(input_item) for input_item in inputs]

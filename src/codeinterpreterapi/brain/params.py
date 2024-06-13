@@ -6,7 +6,7 @@ from langchain.callbacks.base import Callbacks
 from langchain.tools import BaseTool
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.pydantic_v1 import BaseModel
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import tool
 
 
@@ -37,10 +37,13 @@ class CodeInterpreterParams(BaseModel):
     verbose: Optional[bool] = False
     is_local: Optional[bool] = True
     is_ja: Optional[bool] = True
+    runnable_config: Optional[RunnableConfig] = None
 
     @classmethod
     def get_test_params(cls, llm: BaseLanguageModel, llm_tools: BaseChatModel = None):
         tools = [test_plus, test_multiply]
+        configurable = {"session_id": "123"}
+        runnable_config = RunnableConfig(configurable=configurable)
         return CodeInterpreterParams(
             llm_lite=llm,
             llm_fast=llm,
@@ -50,6 +53,7 @@ class CodeInterpreterParams(BaseModel):
             llm_tools=llm_tools,
             tools=tools,
             verbose=True,
+            runnable_config=runnable_config,
         )
 
     class Config:

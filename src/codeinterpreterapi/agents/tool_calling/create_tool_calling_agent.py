@@ -4,15 +4,15 @@ from langchain.agents.format_scratchpad.tools import format_to_tool_messages
 from langchain.agents.output_parsers.tools import ToolsAgentOutputParser
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts.chat import ChatPromptTemplate
-from langchain_core.runnables import Runnable, RunnablePassthrough
+from langchain_core.runnables import Runnable, RunnableConfig, RunnablePassthrough
 from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.utils.runnable import create_complement_input
-from codeinterpreterapi.utils.runnable_history import get_runnable_history
+from codeinterpreterapi.utils.runnable_history import assign_runnable_history
 
 
 def create_tool_calling_agent(
-    llm: BaseLanguageModel, tools: Sequence[BaseTool], prompt: ChatPromptTemplate
+    llm: BaseLanguageModel, tools: Sequence[BaseTool], prompt: ChatPromptTemplate, runnable_config: RunnableConfig
 ) -> Runnable:
     """Create an agent that uses tools.
 
@@ -92,5 +92,5 @@ def create_tool_calling_agent(
         | llm_with_tools
         | ToolsAgentOutputParser()
     )
-    agent = get_runnable_history(agent)
+    agent = assign_runnable_history(agent, runnable_config)
     return agent

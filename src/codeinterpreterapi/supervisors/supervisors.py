@@ -27,8 +27,9 @@ class CodeInterpreterSupervisor:
         if ci_params.is_ja:
             prompt_name += "_ja"
         exec_prompt = hub.pull(prompt_name)
-        if ci_params.is_ja:
-            prompt_name += "_ja"
+
+        # runnable_config
+        runnable_config = ci_params.runnable_config
 
         # TODO: use plan agent
         # plan_agent = RunnableAgent(runnable=planner)
@@ -36,9 +37,8 @@ class CodeInterpreterSupervisor:
         print("choose_supervisor prompt.input_variables=", input_variables)
 
         # exec_agent
-        # exec_prompt = hub.pull("nobu/code_writer:0c56967d")
-        exec_prompt = hub.pull("hwchase17/openai-tools-agent")
-        exec_agent = create_tool_calling_agent(ci_params.llm_tools, ci_params.tools, exec_prompt)
+        # exec_prompt = hub.pull("hwchase17/openai-tools-agent")
+        exec_agent = create_tool_calling_agent(ci_params.llm_tools, ci_params.tools, exec_prompt, runnable_config)
 
         # agent_executor
         agent_executor = AgentExecutor(agent=exec_agent, tools=ci_params.tools, verbose=ci_params.verbose)

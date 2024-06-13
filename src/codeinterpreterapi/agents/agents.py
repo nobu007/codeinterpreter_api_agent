@@ -33,8 +33,11 @@ class CodeInterpreterAgent:
         # prompt = hub.pull("hwchase17/openai-functions-agent")
         prompt = hub.pull("hwchase17/openai-tools-agent")
 
+        # runnable_config
+        runnable_config = ci_params.runnable_config
+
         # agent
-        agent = create_tool_calling_agent(ci_params.llm_tools, ci_params.tools, prompt)
+        agent = create_tool_calling_agent(ci_params.llm_tools, ci_params.tools, prompt, runnable_config)
 
         # agent_executor
         agent_executor = AgentExecutor(
