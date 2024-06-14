@@ -1,7 +1,7 @@
 import traceback
 from typing import Any, List, Optional, Union
 
-from gui_agent_loop_core.schema.schema import AgentName
+from gui_agent_loop_core.schema.core.schema import AgentName
 from langchain.agents import AgentExecutor
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.runnables.utils import Input, Output

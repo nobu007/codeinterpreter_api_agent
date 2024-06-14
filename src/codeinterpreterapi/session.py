@@ -5,7 +5,7 @@ from typing import Any, Optional, Type
 from uuid import UUID
 
 from codeboxapi import CodeBox  # type: ignore
-from gui_agent_loop_core.schema.schema import GuiAgentInterpreterChatResponseStr
+from gui_agent_loop_core.schema.message.schema import GuiAgentInterpreterChatResponseStr
 from langchain.callbacks.base import Callbacks
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 from langchain_community.chat_message_histories.postgres import PostgresChatMessageHistory
