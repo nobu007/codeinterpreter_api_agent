@@ -142,7 +142,8 @@ class CodeInterpreterBrain(Runnable):
         elif ca == AgentName.LLM_PLANNER:
             return AgentName.SUPERVISOR
         elif ca == AgentName.SUPERVISOR:
-            return AgentName.THOUGHT
+            # return AgentName.THOUGHT #disable now
+            return AgentName.AGENT_EXECUTOR
         else:
             # thought -> agent_executor
             return AgentName.AGENT_EXECUTOR
