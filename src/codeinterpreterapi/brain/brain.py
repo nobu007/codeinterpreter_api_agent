@@ -37,6 +37,12 @@ class CodeInterpreterBrain(Runnable):
         self.supervisor: Optional[AgentExecutor] = None
         self.thought: Optional[Runnable] = None
 
+        # agent_results
+        self.agent_executor_result: Optional[str] = ""
+        self.llm_planner_result: Optional[str] = ""
+        self.supervisor_result: Optional[str] = ""
+        self.thought_result: Optional[str] = ""
+
         # initialize agents
         self.initialize()
 
@@ -74,6 +80,12 @@ class CodeInterpreterBrain(Runnable):
             # ca == AgentName.THOUGHT
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
+
+        # set agent_results
+        input['agent_executor_result'] = self.agent_executor_result
+        input['llm_planner_result'] = self.llm_planner_result
+        input['supervisor_result'] = self.supervisor_result
+        input['thought_result'] = self.thought_result
         return input
 
     def run(self, input: Input, runnable_config: Optional[RunnableConfig] = None) -> Output:
@@ -84,13 +96,17 @@ class CodeInterpreterBrain(Runnable):
             ca = self.current_agent
             if ca == AgentName.AGENT_EXECUTOR:
                 output = self.agent_executor.invoke(input, config=runnable_config)
+                self.agent_executor_result = output
             elif ca == AgentName.LLM_PLANNER:
                 output = self.llm_planner.invoke(input)
+                self.llm_planner_result = output
             elif ca == AgentName.SUPERVISOR:
                 output = self.supervisor.invoke(input, config=runnable_config)
+                self.supervisor_result = output
             else:
                 # ca == AgentName.THOUGHT
                 output = self.thought.invoke(input)
+                self.thought_result = output
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()

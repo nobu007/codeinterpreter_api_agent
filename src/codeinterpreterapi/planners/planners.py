@@ -8,7 +8,6 @@ from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.utils.output_parser import PlannerSingleOutputParser
 from codeinterpreterapi.utils.runnable import create_complement_input
-from codeinterpreterapi.utils.runnable_history import assign_runnable_history
 
 
 class CodeInterpreterPlanner:
@@ -49,7 +48,7 @@ class CodeInterpreterPlanner:
             # | StrOutputParser()
             | PlannerSingleOutputParser()
         )
-        runnable = assign_runnable_history(runnable, ci_params.runnable_config)
+        # runnable = assign_runnable_history(runnable, ci_params.runnable_config)
 
         # agent
         # planner_agent = create_react_agent(ci_params.llm_fast, ci_params.tools, prompt)

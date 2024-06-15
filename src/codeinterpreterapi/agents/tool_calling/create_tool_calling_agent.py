@@ -8,7 +8,6 @@ from langchain_core.runnables import Runnable, RunnableConfig, RunnablePassthrou
 from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.utils.runnable import create_complement_input
-from codeinterpreterapi.utils.runnable_history import assign_runnable_history
 
 
 def create_tool_calling_agent(
@@ -92,5 +91,5 @@ def create_tool_calling_agent(
         | llm_with_tools
         | ToolsAgentOutputParser()
     )
-    agent = assign_runnable_history(agent, runnable_config)
+    # agent = assign_runnable_history(agent, runnable_config)
     return agent
