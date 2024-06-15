@@ -201,7 +201,7 @@ def test():
         assert "python" == result.tool
         assert "test output" in result.tool_input
 
-    if False:
+    if True:
         # try3: supervisor
         print("try3: supervisor")
         sample = "ステップバイステップで2*5+2を計算して。"

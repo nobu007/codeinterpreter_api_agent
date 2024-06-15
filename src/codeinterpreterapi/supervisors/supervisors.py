@@ -6,7 +6,7 @@ from langchain import hub
 from langchain.agents import AgentExecutor
 from langchain_core.runnables import Runnable
 
-from codeinterpreterapi.agents.tool_calling.create_tool_calling_agent import create_tool_calling_agent
+from codeinterpreterapi.agents.tool_calling.agent import create_tool_calling_agent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
@@ -37,11 +37,15 @@ class CodeInterpreterSupervisor:
         print("choose_supervisor prompt.input_variables=", input_variables)
 
         # exec_agent
-        # exec_prompt = hub.pull("hwchase17/openai-tools-agent")
-        exec_agent = create_tool_calling_agent(ci_params.llm_tools, ci_params.tools, exec_prompt, runnable_config)
+        exec_prompt = hub.pull("hwchase17/openai-tools-agent")
+        exec_agent = create_tool_calling_agent(
+            llm=ci_params.llm_tools, tools=ci_params.tools, prompt=exec_prompt, runnable_config=runnable_config
+        )
 
         # agent_executor
-        agent_executor = AgentExecutor(agent=exec_agent, tools=ci_params.tools, verbose=ci_params.verbose)
+        agent_executor = AgentExecutor.from_agent_and_tools(
+            agent=exec_agent, tools=ci_params.tools, verbose=ci_params.verbose
+        )
 
         return agent_executor
 

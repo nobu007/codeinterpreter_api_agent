@@ -1,5 +1,6 @@
 from typing import Sequence
 
+from langchain.agents.agent import AgentOutputParser
 from langchain.agents.format_scratchpad.tools import format_to_tool_messages
 from langchain.agents.output_parsers.tools import ToolsAgentOutputParser
 from langchain_core.language_models import BaseLanguageModel
@@ -7,11 +8,25 @@ from langchain_core.prompts.chat import ChatPromptTemplate
 from langchain_core.runnables import Runnable, RunnableConfig, RunnablePassthrough
 from langchain_core.tools import BaseTool
 
+from codeinterpreterapi.agents.tool_calling.prompts import create_tool_calling_agent_prompt
+from codeinterpreterapi.brain.params import CodeInterpreterParams
+from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.utils.runnable import create_complement_input
 
 
+def create_tool_calling_agent_wrapper(
+    ci_params: CodeInterpreterParams,
+    prompt: ChatPromptTemplate,
+) -> Runnable:
+    return create_tool_calling_agent(llm=ci_params.llm_tools, tools=ci_params.tools, prompt=prompt)
+
+
 def create_tool_calling_agent(
-    llm: BaseLanguageModel, tools: Sequence[BaseTool], prompt: ChatPromptTemplate, runnable_config: RunnableConfig
+    llm: BaseLanguageModel,
+    tools: Sequence[BaseTool],
+    prompt: ChatPromptTemplate,
+    output_parser: AgentOutputParser = ToolsAgentOutputParser(),
+    runnable_config: RunnableConfig = RunnableConfig(callbacks=None, tags=[], metadata={}),
 ) -> Runnable:
     """Create an agent that uses tools.
 
@@ -89,7 +104,21 @@ def create_tool_calling_agent(
         | create_complement_input(prompt)
         | prompt
         | llm_with_tools
-        | ToolsAgentOutputParser()
+        | output_parser
     )
     # agent = assign_runnable_history(agent, runnable_config)
     return agent
+
+
+def test():
+    llm, llm_tools = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    prompt = create_tool_calling_agent_prompt(ci_params.is_ja)
+    agent = create_tool_calling_agent_wrapper(ci_params=ci_params, prompt=prompt)
+    test_input = "pythonで円周率を表示するプログラムを実行してください。"
+    agent_output = agent.invoke({"input": test_input, "intermediate_steps": []})
+    print("agent_output=", agent_output)
+
+
+if __name__ == "__main__":
+    test()
