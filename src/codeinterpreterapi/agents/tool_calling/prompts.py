@@ -98,7 +98,7 @@ HUMAN_MESSAGE_TEMPLATE_JA = '''{input}
 '''
 
 
-def create_tool_calling_agent_prompt(is_ja: bool = True):
+def create_tool_calling_agent_prompt(is_ja: bool = True) -> ChatPromptTemplate:
     if is_ja:
         prompt = ChatPromptTemplate.from_messages(
             [

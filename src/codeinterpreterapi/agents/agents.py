@@ -1,9 +1,15 @@
+import os
+from typing import List
+
+import yaml
+from gui_agent_loop_core.schema.agent.schema import AgentDefinition, AgentType
 from langchain.agents import AgentExecutor, BaseSingleActionAgent, ConversationalAgent, ConversationalChatAgent
 from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts.chat import MessagesPlaceholder
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
+from pydantic import ValidationError
 
 from codeinterpreterapi.agents.structured_chat.agent_executor import load_structured_chat_agent_executor
 from codeinterpreterapi.agents.tool_calling.agent_executor import load_tool_calling_agent_executor
@@ -15,14 +21,40 @@ from codeinterpreterapi.tools.tools import CodeInterpreterTools
 
 class CodeInterpreterAgent:
     @staticmethod
-    def choose_agent_executor(ci_params: CodeInterpreterParams) -> AgentExecutor:
-        is_structured_chat = True
+    def choose_agent_executors(ci_params: CodeInterpreterParams) -> List[AgentExecutor]:
+        CONFIG_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "config"))
+        with open(os.path.join(CONFIG_DIR, "agents_config.yaml"), "r", encoding="utf8") as f:
+            agents_config = yaml.safe_load(f)
 
-        if is_structured_chat:
-            return load_structured_chat_agent_executor(ci_params)
+        agent_executors = []
+        for agent in agents_config["agents"]:
+            agent_name = agent["name"]
+            config_path = agent["config_path"]
+
+            with open(os.path.join(CONFIG_DIR, config_path), "r", encoding="utf8") as f:
+                config = yaml.safe_load(f)
+
+            try:
+                print(f"Agent: {agent_name}")
+                print(f"config: {config}")
+                agent_def = AgentDefinition(**config["agent_definition"])
+                agent_def.build_prompt()
+                print(agent_def)
+                print("---")
+                agent_executor = CodeInterpreterAgent.choose_agent_executor(ci_params, agent_def)
+                agent_executors.append(agent_executor)
+            except ValidationError as e:
+                print(f"設定ファイルの検証に失敗しました（Agent: {agent_name}）: {e}")
+
+        return agent_executors
+
+    @staticmethod
+    def choose_agent_executor(ci_params: CodeInterpreterParams, agent_def: AgentDefinition = None) -> AgentExecutor:
+        if agent_def.agent_type == AgentType.STRUCTURED_CHAT:
+            return load_structured_chat_agent_executor(ci_params, agent_def.prompt)
         else:
             # tool_calling
-            return load_tool_calling_agent_executor(ci_params)
+            return load_tool_calling_agent_executor(ci_params, agent_def.prompt)
 
     @staticmethod
     def choose_single_chat_agent(ci_params: CodeInterpreterParams) -> BaseSingleActionAgent:

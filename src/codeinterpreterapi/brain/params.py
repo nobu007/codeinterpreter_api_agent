@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from codeboxapi import CodeBox  # type: ignore
+from gui_agent_loop_core.schema.agent.schema import AgentDefinition
 from langchain.base_language import BaseLanguageModel
 from langchain.callbacks.base import Callbacks
 from langchain.tools import BaseTool
@@ -38,6 +39,7 @@ class CodeInterpreterParams(BaseModel):
     is_local: Optional[bool] = True
     is_ja: Optional[bool] = True
     runnable_config: Optional[RunnableConfig] = None
+    agent_def: Optional[List[AgentDefinition]] = []
 
     @classmethod
     def get_test_params(cls, llm: BaseLanguageModel, llm_tools: BaseChatModel = None):

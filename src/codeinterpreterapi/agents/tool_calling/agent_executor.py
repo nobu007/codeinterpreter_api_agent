@@ -2,6 +2,7 @@
 # https://github.com/langchain-ai/langchain/blob/3ee07473821906a29d944866a2ededb41148f234/libs/experimental/langchain_experimental/plan_and_execute/executors/agent_executor.py
 
 from langchain.agents.agent import AgentExecutor
+from langchain_core.prompts import ChatPromptTemplate
 
 from codeinterpreterapi.agents.tool_calling.agent import create_tool_calling_agent
 from codeinterpreterapi.agents.tool_calling.prompts import create_tool_calling_agent_prompt
@@ -9,11 +10,15 @@ from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
 
 
-def load_tool_calling_agent_executor(ci_params: CodeInterpreterParams) -> AgentExecutor:
+def load_tool_calling_agent_executor(
+    ci_params: CodeInterpreterParams, prompt: ChatPromptTemplate = None
+) -> AgentExecutor:
     """
     Load an agent executor(general purpose).
     """
-    prompt = create_tool_calling_agent_prompt(ci_params.is_ja)
+    prompt = None
+    if prompt is None:
+        prompt = create_tool_calling_agent_prompt(ci_params.is_ja)
     input_variables = prompt.input_variables
     print("load_tool_calling_agent_executor prompt.input_variables=", input_variables)
     agent = create_tool_calling_agent(

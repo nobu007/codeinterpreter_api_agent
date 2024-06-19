@@ -2,6 +2,7 @@
 # https://github.com/langchain-ai/langchain/blob/3ee07473821906a29d944866a2ededb41148f234/libs/experimental/langchain_experimental/plan_and_execute/executors/agent_executor.py
 
 from langchain.agents.agent import AgentExecutor
+from langchain_core.prompts import ChatPromptTemplate
 
 from codeinterpreterapi.agents.structured_chat.agent import create_structured_chat_agent
 from codeinterpreterapi.agents.structured_chat.prompts import create_structured_chat_agent_prompt
@@ -9,11 +10,15 @@ from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
 
 
-def load_structured_chat_agent_executor(ci_params: CodeInterpreterParams) -> AgentExecutor:
+def load_structured_chat_agent_executor(
+    ci_params: CodeInterpreterParams, prompt: ChatPromptTemplate = None
+) -> AgentExecutor:
     """
     Load an agent executor(general purpose).
     """
-    prompt = create_structured_chat_agent_prompt(ci_params.is_ja)
+    prompt = None
+    if prompt is None:
+        prompt = create_structured_chat_agent_prompt(ci_params.is_ja)
     input_variables = prompt.input_variables
     print("load_agent_executor prompt.input_variables=", input_variables)
     agent = create_structured_chat_agent(
@@ -22,6 +27,7 @@ def load_structured_chat_agent_executor(ci_params: CodeInterpreterParams) -> Age
         # output_parser=output_parser,
         prompt=prompt,
         runnable_config=ci_params.runnable_config,
+        stop_sequence=["Observation:", "最終回答", "Final Answer"],
     )
 
     agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=ci_params.tools, verbose=ci_params.verbose)

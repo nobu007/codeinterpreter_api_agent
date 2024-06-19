@@ -1,3 +1,4 @@
+import random
 import traceback
 from typing import Any, List, Optional, Union
 
@@ -32,6 +33,7 @@ class CodeInterpreterBrain(Runnable):
         self.current_agent_score: int = 0
 
         # agents
+        self.agent_executors: Optional[List[Runnable]] = []
         self.agent_executor: Optional[Runnable] = None
         self.llm_planner: Optional[Runnable] = None
         self.supervisor: Optional[AgentExecutor] = None
@@ -53,7 +55,8 @@ class CodeInterpreterBrain(Runnable):
         self.initialize_thought()
 
     def initialize_agent_executor(self):
-        self.agent_executor = CodeInterpreterAgent.choose_agent_executor(ci_params=self.ci_params)
+        self.agent_executors = CodeInterpreterAgent.choose_agent_executors(ci_params=self.ci_params)
+        self.agent_executor = self.agent_executors[0]
 
     def initialize_llm_planner(self):
         self.llm_planner = CodeInterpreterPlanner.choose_planner(ci_params=self.ci_params)
@@ -162,6 +165,7 @@ class CodeInterpreterBrain(Runnable):
             return AgentName.AGENT_EXECUTOR
         else:
             # thought -> agent_executor
+            self.agent_executor = random.choice(self.agent_executors)
             return AgentName.AGENT_EXECUTOR
 
     def use_agent(self, new_agent: AgentName):

@@ -51,7 +51,6 @@ def create_complement_input(prompt: Union[BasePromptTemplate, RunnableSequence],
             if key not in complemented_dict:
                 complemented_dict[key] = ""
 
-        print("complemented_dict=", complemented_dict)
         return complemented_dict
 
     return RunnableLambda(complement_input)

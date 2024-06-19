@@ -1,0 +1,7 @@
+agents:
+  - name: coding_agent
+    config_path: coding_agent/config.yaml
+  - name: split_agent
+    config_path: split_agent/config.yaml
+  - name: fix_agent
+    config_path: fix_agent/config.yaml
