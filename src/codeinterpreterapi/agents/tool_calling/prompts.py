@@ -1,6 +1,8 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-SYSTEM_MESSAGE_TEMPLATE = '''Respond to the human as helpfully and accurately as possible. You have access to the following tools:
+SYSTEM_MESSAGE_TEMPLATE = '''{agent_role}
+
+Respond to the human as helpfully and accurately as possible. You have access to the following tools:
 
             {tools}
 
@@ -45,7 +47,9 @@ HUMAN_MESSAGE_TEMPLATE = '''{input}
 
             (reminder to respond in a JSON blob no matter what)'''
 
-SYSTEM_MESSAGE_TEMPLATE_JA = '''初期質問にできる限り丁寧かつ正確に答えてください。以下のツールが利用可能です:
+SYSTEM_MESSAGE_TEMPLATE_JA = '''{agent_role}
+
+初期質問にできる限り丁寧かつ正確に答えてください。以下のツールが利用可能です:
     {tools}
 
 1つの $JSON_BLOB では常に単一のアクションで応答してください。

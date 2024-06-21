@@ -51,10 +51,10 @@ class CodeInterpreterAgent:
     @staticmethod
     def choose_agent_executor(ci_params: CodeInterpreterParams, agent_def: AgentDefinition = None) -> AgentExecutor:
         if agent_def.agent_type == AgentType.STRUCTURED_CHAT:
-            return load_structured_chat_agent_executor(ci_params, agent_def.prompt)
+            return load_structured_chat_agent_executor(ci_params, agent_def)
         else:
             # tool_calling
-            return load_tool_calling_agent_executor(ci_params, agent_def.prompt)
+            return load_tool_calling_agent_executor(ci_params, agent_def)
 
     @staticmethod
     def choose_single_chat_agent(ci_params: CodeInterpreterParams) -> BaseSingleActionAgent:
