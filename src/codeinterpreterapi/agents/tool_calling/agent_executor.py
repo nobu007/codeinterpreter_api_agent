@@ -30,8 +30,11 @@ def load_tool_calling_agent_executor(
         prompt=prompt,
         runnable_config=ci_params.runnable_config,
     )
+    agent_def.agent = agent
 
     agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=ci_params.tools, verbose=ci_params.verbose)
+    agent_def.agent_executor = agent_executor
+
     return agent_executor
 
 

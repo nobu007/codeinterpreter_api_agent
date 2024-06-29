@@ -31,8 +31,10 @@ def load_structured_chat_agent_executor(
         runnable_config=ci_params.runnable_config,
         # stop_sequence=["Observation:", "最終回答", "Final Answer"],
     )
+    agent_def.agent = agent
 
     agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=ci_params.tools, verbose=ci_params.verbose)
+    agent_def.agent_executor = agent_executor
     return agent_executor
 
 

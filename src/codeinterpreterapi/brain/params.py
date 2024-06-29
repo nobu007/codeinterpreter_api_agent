@@ -39,7 +39,8 @@ class CodeInterpreterParams(BaseModel):
     is_local: Optional[bool] = True
     is_ja: Optional[bool] = True
     runnable_config: Optional[RunnableConfig] = None
-    agent_def: Optional[List[AgentDefinition]] = []
+    agent_def_list: Optional[List[AgentDefinition]] = []
+    supervisor_agent: Optional[Runnable] = None
 
     @classmethod
     def get_test_params(cls, llm: BaseLanguageModel, llm_tools: BaseChatModel = None):

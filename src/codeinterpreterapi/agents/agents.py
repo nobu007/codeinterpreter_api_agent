@@ -43,6 +43,7 @@ class CodeInterpreterAgent:
                 print("---")
                 agent_executor = CodeInterpreterAgent.choose_agent_executor(ci_params, agent_def)
                 agent_executors.append(agent_executor)
+                ci_params.agent_def_list.append(agent_def)
             except ValidationError as e:
                 print(f"設定ファイルの検証に失敗しました（Agent: {agent_name}）: {e}")
 
