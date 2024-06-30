@@ -181,7 +181,7 @@ def test():
     ci_params.tools = CodeInterpreterTools(ci_params).get_all_tools()
     brain = CodeInterpreterBrain(ci_params)
 
-    if True:
+    if False:
         # try1: agent_executor
         print("try1: agent_executor")
         brain.use_agent(AgentName.AGENT_EXECUTOR)
@@ -205,7 +205,7 @@ def test():
         assert "python" == result.tool
         assert "test output" in result.tool_input
 
-    if False:
+    if True:
         # try3: supervisor
         print("try3: supervisor")
         sample = "ステップバイステップで2*5+2を計算して。"

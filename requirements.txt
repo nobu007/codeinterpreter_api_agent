@@ -4,6 +4,7 @@ langchain_anthropic
 langchain_community
 langchain_experimental
 langchainhub
+langgraph
 langsmith
 https://huggingface.co/spacy/en_core_web_md/resolve/main/en_core_web_md-any-py3-none-any.whl
 lxml

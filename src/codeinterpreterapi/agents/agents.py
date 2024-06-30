@@ -126,10 +126,10 @@ def test():
     ci_params.tools = []
     ci_params.tools = CodeInterpreterTools(ci_params).get_all_tools()
 
-    agent = CodeInterpreterAgent.choose_agent_executor(ci_params=ci_params)
+    agent_executors = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
     # agent = CodeInterpreterAgent.choose_single_chat_agent(ci_params=ci_params)
     # agent = CodeInterpreterAgent.create_agent_and_executor_experimental(ci_params=ci_params)
-    result = agent.invoke({"input": sample})
+    result = agent_executors[0].invoke({"input": sample})
     print("result=", result)
 
 
