@@ -2,9 +2,7 @@ import functools
 import operator
 from typing import Annotated, Sequence, TypedDict
 
-from langchain.callbacks import StdOutCallbackHandler
 from langchain_core.messages import BaseMessage
-from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
@@ -17,11 +15,14 @@ from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 
 def agent_node(state, agent, name):
     print(f"agent_node {name} node!")
-    print("  state=", state)
-    if "input" not in state:
-        state["input"] = state["question"]
-    result = agent.invoke(state)
-    print("agent_node result=", result)
+    print("  state keys=", state.keys())
+    inputs = state
+    if "input" not in inputs:
+        # inputs["input"] = state["question"]
+        inputs["input"] = str(state["messages"])
+    # inputs["agent_scratchpad"] = str(state["messages"])
+    result = agent.invoke(inputs)
+    print("agent_node type(result)=", type(result))
     if "output" in result:
         state["messages"].append(str(result["output"]))
     return state
@@ -29,23 +30,27 @@ def agent_node(state, agent, name):
 
 def supervisor_node(state, supervisor, name):
     print(f"supervisor_node {name} node!")
-    print("  state=", state)
+    print("  state keys=", state.keys())
     result = supervisor.invoke(state)
     print("supervisor_node type(result)=", type(result))
-    print("supervisor_node result=", result)
+    # print("supervisor_node result=", result)
 
+    state["question"] = state["messages"][0]
     if result is None:
         state["next"] = "FINISH"
     elif isinstance(result, dict):
+        print("supervisor_node type(result)=", type(result))
         # if "output" in result:
         #     state["messages"].append(str(result["output"]))
         if "next" in result:
-            state["next"] = result.next
+            state["next"] = result["next"]
+            print("supervisor_node result(dict) next=", result["next"])
         state["messages"].append(f"次のagentは「{result.next}」です。")
     elif hasattr(result, "next"):
         # RouteSchema object
         state["next"] = result.next
         state["messages"].append(f"次のagentは「{result.next}」です。")
+        print("supervisor_node result(RouteSchema) next=", result.next)
     else:
         state["next"] = "FINISH"
 
@@ -119,14 +124,12 @@ class CodeInterpreterStateGraph:
 
 def test():
     llm, llm_tools = prepare_test_llm()
-    config = RunnableConfig({'callbacks': [StdOutCallbackHandler()]})
-    llm = llm.with_config(config)
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
     _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     _ = CodeInterpreterSupervisor.choose_supervisor(planner=planner, ci_params=ci_params)
 
-    sg = CodeInterpreterStateGraph(ci_params)
+    sg = CodeInterpreterStateGraph(ci_params=ci_params)
     output = sg.run({"input": TestPrompt.svg_input_str, "messages": [TestPrompt.svg_input_str]})
     print("output=", output)
 

@@ -16,6 +16,7 @@ from codeinterpreterapi.agents.tool_calling.agent_executor import load_tool_call
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import prepare_test_llm
+from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 from codeinterpreterapi.tools.tools import CodeInterpreterTools
 
 
@@ -119,7 +120,6 @@ class CodeInterpreterAgent:
 
 
 def test():
-    sample = "ツールのpythonで円周率を表示するプログラムを実行してください。"
     # sample = "lsコマンドを実行してください。"
     llm, llm_tools = prepare_test_llm()
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
@@ -129,7 +129,7 @@ def test():
     agent_executors = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
     # agent = CodeInterpreterAgent.choose_single_chat_agent(ci_params=ci_params)
     # agent = CodeInterpreterAgent.create_agent_and_executor_experimental(ci_params=ci_params)
-    result = agent_executors[0].invoke({"input": sample})
+    result = agent_executors[0].invoke({"input": TestPrompt.svg_input_str})
     print("result=", result)
 
 

@@ -18,11 +18,11 @@ def load_structured_chat_agent_executor(
     """
     prompt = create_structured_chat_agent_prompt(ci_params.is_ja)
     if agent_def.agent_role is not None:
-        print("load_structured_chat_agent_executor prompt.partial agent_def.message_prompt_template")
         prompt = prompt.partial(agent_role=agent_def.agent_role)
     input_variables = prompt.input_variables
-    print("load_structured_chat_agent_executor prompt.input_variables=", input_variables)
-    print("load_structured_chat_agent_executor prompt=", prompt.messages)
+    if ci_params.verbose_prompt:
+        print("load_structured_chat_agent_executor prompt.input_variables=", input_variables)
+        print("load_structured_chat_agent_executor prompt=", prompt.messages)
     agent = create_structured_chat_agent(
         llm=ci_params.llm_tools,
         tools=ci_params.tools,

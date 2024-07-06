@@ -30,3 +30,5 @@ class TestPrompt:
     Python3とlxmlライブラリを使用して実装すること
     コードはモジュール化し、再利用性と保守性を高めること
     """
+
+    ls_command_str = "lsコマンドを実行してください。"

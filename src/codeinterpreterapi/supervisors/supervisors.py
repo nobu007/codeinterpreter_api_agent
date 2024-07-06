@@ -68,7 +68,7 @@ class CodeInterpreterSupervisor:
 
         class RouteSchema(BaseModel):
             next: str = Field(..., description=f"The next route item. This is one of: {options}")
-            question: str = Field(..., description="The original question from user.")
+            # question: str = Field(..., description="The original question from user.")
 
         class CustomOutputParserForGraph(AgentOutputParser):
             def parse(self, text: str) -> dict:

@@ -2,9 +2,10 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from google.ai.generativelanguage_v1beta.types import GenerateContentRequest
 from google.generativeai.types.content_types import FunctionDeclarationType  # type: ignore[import]
+from langchain.callbacks import StdOutCallbackHandler
 from langchain.chat_models.base import BaseChatModel
 from langchain_core.messages import BaseMessage
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
 from langchain_google_genai._common import SafetySettingDict
 from langchain_google_genai._function_utils import _ToolConfigDict, _ToolDictLike
@@ -148,4 +149,10 @@ class CodeInterpreterLlm:
 
 
 def prepare_test_llm():
-    return CodeInterpreterLlm.get_llm_switcher(), CodeInterpreterLlm.get_llm_switcher_tools()
+    llm = CodeInterpreterLlm.get_llm_switcher()
+    llm_tools = CodeInterpreterLlm.get_llm_switcher_tools()
+    runnable_config = RunnableConfig({'callbacks': [StdOutCallbackHandler()]})
+    llm = llm.with_config(runnable_config)
+    llm_tools = llm_tools.with_config(runnable_config)
+
+    return llm, llm_tools

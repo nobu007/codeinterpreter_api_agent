@@ -36,6 +36,7 @@ class CodeInterpreterParams(BaseModel):
     tools: Optional[List[BaseTool]] = []
     callbacks: Optional[Callbacks] = None
     verbose: Optional[bool] = False
+    verbose_prompt: Optional[bool] = False
     is_local: Optional[bool] = True
     is_ja: Optional[bool] = True
     runnable_config: Optional[RunnableConfig] = None
@@ -43,10 +44,13 @@ class CodeInterpreterParams(BaseModel):
     supervisor_agent: Optional[Runnable] = None
 
     @classmethod
-    def get_test_params(cls, llm: BaseLanguageModel, llm_tools: BaseChatModel = None):
+    def get_test_params(
+        cls, llm: BaseLanguageModel, llm_tools: BaseChatModel = None, runnable_config: RunnableConfig = None
+    ):
         tools = [test_plus, test_multiply]
         configurable = {"session_id": "123"}
-        runnable_config = RunnableConfig(configurable=configurable)
+        if RunnableConfig is None:
+            runnable_config = RunnableConfig(configurable=configurable)
         return CodeInterpreterParams(
             llm_lite=llm,
             llm_fast=llm,
