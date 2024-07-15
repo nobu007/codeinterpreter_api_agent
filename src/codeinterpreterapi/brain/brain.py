@@ -175,8 +175,8 @@ class CodeInterpreterBrain(Runnable):
 
 def test():
     settings.WORK_DIR = "/tmp"
-    llm, llm_tools = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     ci_params.tools = []
     ci_params.tools = CodeInterpreterTools(ci_params).get_all_tools()
     brain = CodeInterpreterBrain(ci_params)

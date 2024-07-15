@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
+from dotenv import load_dotenv
 from google.ai.generativelanguage_v1beta.types import GenerateContentRequest
 from google.generativeai.types.content_types import FunctionDeclarationType  # type: ignore[import]
-from langchain.callbacks import StdOutCallbackHandler
 from langchain.chat_models.base import BaseChatModel
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import Runnable, RunnableConfig
@@ -10,6 +10,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
 from langchain_google_genai._common import SafetySettingDict
 from langchain_google_genai._function_utils import _ToolConfigDict, _ToolDictLike
 
+from codeinterpreterapi.callbacks.callbacks import FullOutCallbackHandler
 from codeinterpreterapi.config import settings
 
 
@@ -149,10 +150,14 @@ class CodeInterpreterLlm:
 
 
 def prepare_test_llm():
+    load_dotenv(verbose=True, override=False)
+
     llm = CodeInterpreterLlm.get_llm_switcher()
     llm_tools = CodeInterpreterLlm.get_llm_switcher_tools()
-    runnable_config = RunnableConfig({'callbacks': [StdOutCallbackHandler()]})
-    llm = llm.with_config(runnable_config)
-    llm_tools = llm_tools.with_config(runnable_config)
+    callbacks = [FullOutCallbackHandler()]
+    configurable = {"session_id": "123"}
+    runnable_config = RunnableConfig(callbacks=callbacks, configurable=configurable)
+    llm = llm.with_config(config=runnable_config)
+    llm_tools = llm_tools.with_config(config=runnable_config)
 
-    return llm, llm_tools
+    return (llm, llm_tools, runnable_config)

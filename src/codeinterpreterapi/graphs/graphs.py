@@ -2,11 +2,13 @@ import functools
 import operator
 from typing import Annotated, Sequence, TypedDict
 
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AnyMessage, BaseMessage
 from langgraph.graph import END, StateGraph
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
+from codeinterpreterapi.callbacks.callbacks import show_callback_info
+from codeinterpreterapi.graphs.tool_node.tool_node import create_agent_nodes
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
 from codeinterpreterapi.supervisors.supervisors import CodeInterpreterSupervisor
@@ -63,36 +65,54 @@ def supervisor_node(state, supervisor, name):
     return state
 
 
+# グラフで使用する変数(状態)を定義
+class GraphState(TypedDict):
+    # llm_bind_tool: BaseLLM  # ツールが紐付けされたllmモデル
+    # emb_model: HuggingFaceEmbeddings  # Embeddingsモデル
+    question: str  # 質問文
+    # documents: List[Document]  # indexから取得したドキュメントのリスト
+    messages: Annotated[Sequence[BaseMessage], operator.add] = []
+    # intermediate_steps: str = ""
+
+
+def should_end(state: GraphState):
+    last_message = state["messages"][-1]
+    return "FINAL ANSWER:" in last_message.content
+
+
 class CodeInterpreterStateGraph:
     def __init__(self, ci_params: CodeInterpreterParams):
         self.ci_params = ci_params
         self.node_descriptions_dict = {}
         self.node_agent_dict = {}
-        self.initialize_agent_info()
+        # self.initialize_agent_info()
         self.graph = self.initialize_graph()
 
-    def initialize_agent_info(self) -> None:
-        # 各エージェントに対してノードを作成
-        for agent_def in self.ci_params.agent_def_list:
-            agent = agent_def.agent_executor
-            agent_name = agent_def.agent_name
-            agent_role = agent_def.agent_role
-
-            self.node_descriptions_dict[agent_name] = agent_role
-            self.node_agent_dict[agent_name] = agent
-
-    # グラフで使用する変数(状態)を定義
-    class GraphState(TypedDict):
-        # llm_bind_tool: BaseLLM  # ツールが紐付けされたllmモデル
-        # emb_model: HuggingFaceEmbeddings  # Embeddingsモデル
-        question: str  # 質問文
-        # documents: List[Document]  # indexから取得したドキュメントのリスト
-        messages: Annotated[Sequence[BaseMessage], operator.add] = []
-        # intermediate_steps: str = ""
+    # メッセージ変更関数の準備
+    def _modify_messages(self, messages: list[AnyMessage]):
+        show_callback_info("_modify_messages=", "messages", messages)
+        last_message = messages[0]
+        return [last_message]
 
     def initialize_graph(self) -> StateGraph:
-        workflow = StateGraph(CodeInterpreterStateGraph.GraphState)
+        workflow = StateGraph(GraphState)
 
+        agent_nodes = create_agent_nodes(self.ci_params)
+        is_first = True
+        for i, agent_node in enumerate(agent_nodes):
+            agent_name = f"agent{i}"
+            workflow.add_node(agent_name, agent_node)
+            # エージェントの実行後、即座に終了
+            workflow.add_edge(agent_name, END)
+            if is_first:
+                workflow.set_entry_point(agent_name)
+                is_first = False
+            break
+
+        return workflow.compile()
+
+    def initialize_graph2(self) -> StateGraph:
+        workflow = StateGraph(GraphState)
         SUPERVISOR_AGENT_NAME = "supervisor_agent"
         supervisor_node_replaced = functools.partial(
             supervisor_node, supervisor=self.ci_params.supervisor_agent, name=SUPERVISOR_AGENT_NAME
@@ -123,8 +143,8 @@ class CodeInterpreterStateGraph:
 
 
 def test():
-    llm, llm_tools = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     _ = CodeInterpreterSupervisor.choose_supervisor(planner=planner, ci_params=ci_params)

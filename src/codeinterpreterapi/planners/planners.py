@@ -96,8 +96,8 @@ class CodeInterpreterPlanner:
 
 def test():
     sample = "ステップバイステップで2*5+2を計算して。"
-    llm, llm_tools = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     result = planner.invoke({"input": sample, "agent_scratchpad": ""})
     print("result=", result)

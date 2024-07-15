@@ -1,5 +1,5 @@
 agent_definition:
-  agent_name: "プログラムを分割するエージェント"
+  agent_name: "code_split_agent"
   agent_type: structured_chat
   agent_role: |
     プログラムを分割する作業をお願いします。

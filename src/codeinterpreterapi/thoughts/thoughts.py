@@ -52,8 +52,8 @@ class CodeInterpreterToT(RunnableSerializable):
 
 
 def test():
-    llm, llm_tools = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     tot_chain = CodeInterpreterToT.get_runnable_tot_chain(ci_params=ci_params)
     tot_chain.invoke({"input": sample2})
 

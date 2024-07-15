@@ -1,5 +1,5 @@
 agent_definition:
-  agent_name: "main関数を作成するエージェント"
+  agent_name: "main_function_create_agent"
   agent_type: tool_calling
   agent_role: |
     プログラムのmain関数を作成する作業をお願いします。
@@ -8,7 +8,7 @@ agent_definition:
 
     あなたの役割は次の通りです。
     ・コードの作成
-    ・コードの実行(toolを使って実行してエラーなく実行できるところまで確認してください)
+    ・コードの実行(toolを使ってコードを実行できます。エラーなく実行できることを確認してください。)
     ・エラーがある場合の修正と再実行
 
     次に続くシステムプロンプトを注意深く読んで正しくふるまってください。

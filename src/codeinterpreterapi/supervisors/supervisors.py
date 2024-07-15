@@ -144,6 +144,12 @@ class CodeInterpreterSupervisor:
 
         ci_params.supervisor_agent = supervisor_agent_structured_output
 
+        # config
+        if ci_params.runnable_config:
+            supervisor_agent_structured_output = supervisor_agent_structured_output.with_config(
+                ci_params.runnable_config
+            )
+
         # agent_executor
         # agent_executor = AgentExecutor.from_agent_and_tools(
         #     agent=supervisor_agent_for_executor,
@@ -156,8 +162,8 @@ class CodeInterpreterSupervisor:
 
 
 def test():
-    llm, llm_tools = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     supervisor = CodeInterpreterSupervisor.choose_supervisor(planner=planner, ci_params=ci_params)

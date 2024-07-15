@@ -175,8 +175,8 @@ class PythonTools:
 
 def test():
     settings.WORK_DIR = "/tmp"
-    llm, llm_tools = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     tools_instance = PythonTools(ci_params=ci_params)
     test_code = "print('test output')"
     result = tools_instance._run_handler(test_code)

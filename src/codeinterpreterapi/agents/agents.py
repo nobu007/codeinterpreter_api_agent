@@ -112,7 +112,7 @@ class CodeInterpreterAgent:
             #     return_messages=True,
             #     chat_memory=chat_memory,
             # ),
-            callbacks=ci_params.callbacks,
+            # callbacks=ci_params.callbacks,
         )
         print("agent_executor.input_keys", agent_executor.input_keys)
         print("agent_executor.output_keys", agent_executor.output_keys)
@@ -120,15 +120,10 @@ class CodeInterpreterAgent:
 
 
 def test():
-    # sample = "lsコマンドを実行してください。"
-    llm, llm_tools = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
-    ci_params.tools = []
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     ci_params.tools = CodeInterpreterTools(ci_params).get_all_tools()
-
     agent_executors = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
-    # agent = CodeInterpreterAgent.choose_single_chat_agent(ci_params=ci_params)
-    # agent = CodeInterpreterAgent.create_agent_and_executor_experimental(ci_params=ci_params)
     result = agent_executors[0].invoke({"input": TestPrompt.svg_input_str})
     print("result=", result)
 

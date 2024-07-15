@@ -39,8 +39,8 @@ def load_structured_chat_agent_executor(
 
 
 def test():
-    llm, llm_tools = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     agent_executor = load_structured_chat_agent_executor(ci_params)
     test_input = "pythonで円周率を表示するプログラムを実行してください。"
     agent_executor_output = agent_executor.invoke({"input": test_input})

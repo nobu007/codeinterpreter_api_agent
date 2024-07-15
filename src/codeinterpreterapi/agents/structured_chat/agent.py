@@ -176,8 +176,8 @@ def create_structured_chat_agent(
 
 
 def test():
-    llm, llm_tools = prepare_test_llm()
-    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools)
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     prompt = create_structured_chat_agent_prompt(ci_params.is_ja)
     agent = create_structured_chat_agent_wrapper(ci_params=ci_params, prompt=prompt)
     test_input = "pythonで円周率を表示するプログラムを実行してください。"

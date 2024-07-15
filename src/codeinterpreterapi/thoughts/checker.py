@@ -241,7 +241,7 @@ class MyToTChecker(ToTChecker):
 # Testing the MyChecker class above:
 #######
 def test_checker():
-    llm, llm_tools = prepare_test_llm()
+    llm, llm_tools, runnable_config = prepare_test_llm()
     tot_chain = create_tot_chain_from_llm(llm)
     checker = tot_chain.checker
     assert (

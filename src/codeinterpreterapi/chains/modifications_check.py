@@ -47,7 +47,7 @@ async def aget_file_modifications(
 
 
 async def test() -> None:
-    llm, llm_tools = prepare_test_llm()
+    llm, llm_tools, runnable_config = prepare_test_llm()
 
     code = """
         import matplotlib.pyplot as plt

@@ -1,5 +1,5 @@
 agent_definition:
-  agent_name: "プログラムを修正するエージェント"
+  agent_name: "code_fix_agent"
   agent_type: structured_chat
   agent_role: |
     プログラムを修正する作業をお願いします。
