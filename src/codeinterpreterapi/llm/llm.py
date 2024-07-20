@@ -2,13 +2,15 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from dotenv import load_dotenv
 from google.ai.generativelanguage_v1beta.types import GenerateContentRequest
+from google.generativeai.types import Tool as GoogleTool  # type: ignore[import]
 from google.generativeai.types.content_types import FunctionDeclarationType  # type: ignore[import]
+from google.generativeai.types.content_types import ToolDict  # type: ignore[import]
 from langchain.chat_models.base import BaseChatModel
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
 from langchain_google_genai._common import SafetySettingDict
-from langchain_google_genai._function_utils import _ToolConfigDict, _ToolDictLike
+from langchain_google_genai._function_utils import _ToolConfigDict
 
 from codeinterpreterapi.callbacks.callbacks import FullOutCallbackHandler
 from codeinterpreterapi.config import settings
@@ -20,7 +22,7 @@ class ChatGoogleGenerativeAIWrapper(ChatGoogleGenerativeAI):
         messages: List[BaseMessage],
         *,
         stop: Optional[List[str]] = None,
-        tools: Optional[Sequence[_ToolDictLike]] = None,
+        tools: Optional[Sequence[Union[ToolDict, GoogleTool]]] = None,
         functions: Optional[Sequence[FunctionDeclarationType]] = None,
         safety_settings: Optional[SafetySettingDict] = None,
         tool_config: Optional[Union[Dict, _ToolConfigDict]] = None,

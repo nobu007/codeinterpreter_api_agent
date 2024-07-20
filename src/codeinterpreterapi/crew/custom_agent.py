@@ -37,7 +37,8 @@ class CustomAgent(BaseAgent):
         input_dict["question"] = context
         input_dict["message"] = task.description + "を実行してください。\n" + task.expected_output
         result = self.agent_executor.invoke(input=input_dict)
-        return result
+        print("execute_task result=", result)
+        return result["output"]
 
     def create_agent_executor(self, tools=None) -> None:
         pass

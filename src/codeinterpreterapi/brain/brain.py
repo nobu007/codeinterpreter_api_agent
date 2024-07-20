@@ -10,6 +10,7 @@ from langchain_core.runnables.utils import Input, Output
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
+from codeinterpreterapi.crew.crew_agent import CodeInterpreterCrew
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
 from codeinterpreterapi.supervisors.supervisors import CodeInterpreterSupervisor
@@ -29,7 +30,7 @@ class CodeInterpreterBrain(Runnable):
         self.verbose = self.ci_params.verbose
 
         # brain logic vals
-        self.current_agent: AgentName = AgentName.AGENT_EXECUTOR
+        self.current_agent: AgentName = AgentName.CREW
         self.current_agent_score: int = 0
 
         # agents
@@ -44,6 +45,7 @@ class CodeInterpreterBrain(Runnable):
         self.llm_planner_result: Optional[str] = ""
         self.supervisor_result: Optional[str] = ""
         self.thought_result: Optional[str] = ""
+        self.crew_result: Optional[str] = ""
 
         # initialize agents
         self.initialize()
@@ -53,6 +55,7 @@ class CodeInterpreterBrain(Runnable):
         self.initialize_llm_planner()
         self.initialize_supervisor()
         self.initialize_thought()
+        self.initialize_crew()
 
     def initialize_agent_executor(self):
         self.agent_executors = CodeInterpreterAgent.choose_agent_executors(ci_params=self.ci_params)
@@ -68,6 +71,9 @@ class CodeInterpreterBrain(Runnable):
     def initialize_thought(self):
         self.thought = CodeInterpreterToT.get_runnable_tot_chain(ci_params=self.ci_params)
 
+    def initialize_crew(self):
+        self.crew = CodeInterpreterCrew(ci_params=self.ci_params)
+
     def prepare_input(self, input: Input):
         ca = self.current_agent
         if ca == AgentName.AGENT_EXECUTOR:
@@ -79,8 +85,11 @@ class CodeInterpreterBrain(Runnable):
         elif ca == AgentName.SUPERVISOR:
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
+        elif ca == AgentName.THOUGHT:
+            if "intermediate_steps" in input:
+                del input['intermediate_steps']
         else:
-            # ca == AgentName.THOUGHT
+            # ca == AgentName.CREW
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
 
@@ -89,6 +98,7 @@ class CodeInterpreterBrain(Runnable):
         input['llm_planner_result'] = self.llm_planner_result
         input['supervisor_result'] = self.supervisor_result
         input['thought_result'] = self.thought_result
+        input['crew_result'] = self.crew_result
         return input
 
     def run(self, input: Input, runnable_config: Optional[RunnableConfig] = None) -> Output:
@@ -106,10 +116,13 @@ class CodeInterpreterBrain(Runnable):
             elif ca == AgentName.SUPERVISOR:
                 output = self.supervisor.invoke(input, config=runnable_config)
                 self.supervisor_result = output
-            else:
-                # ca == AgentName.THOUGHT
-                output = self.thought.invoke(input)
+            elif ca == AgentName.THOUGHT:
+                output = self.supervisor.invoke(input, config=runnable_config)
                 self.thought_result = output
+            else:
+                # ca == AgentName.CREW
+                output = self.crew.run(input)
+                self.crew_result = output
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
@@ -163,10 +176,12 @@ class CodeInterpreterBrain(Runnable):
         elif ca == AgentName.SUPERVISOR:
             # return AgentName.THOUGHT #disable now
             return AgentName.AGENT_EXECUTOR
-        else:
-            # thought -> agent_executor
+        elif ca == AgentName.THOUGHT:
             self.agent_executor = random.choice(self.agent_executors)
             return AgentName.AGENT_EXECUTOR
+        else:
+            # CREW -> CREW
+            return AgentName.CREW
 
     def use_agent(self, new_agent: AgentName):
         print("CodeInterpreterBrain use_agent=", new_agent)
