@@ -33,9 +33,9 @@ class CustomAgent(BaseAgent):
         print("execute_task task=", task)
         print("execute_task context=", context)
         input_dict = {}
-        input_dict["input"] = context
-        input_dict["question"] = context
-        input_dict["message"] = task.description + "を実行してください。\n" + task.expected_output
+        input_dict["input"] = task.description
+        input_dict["question"] = task.prompt_context
+        input_dict["message"] = "タスクを実行してください。\n" + task.expected_output
         result = self.agent_executor.invoke(input=input_dict)
         print("execute_task result=", result)
         return result["output"]
