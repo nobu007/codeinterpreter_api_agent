@@ -1,27 +1,15 @@
-from codeinterpreterapi import CodeInterpreterSession
+from codeinterpreterapi.brain.params import CodeInterpreterParams
+from codeinterpreterapi.llm.llm import prepare_test_llm
+from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
 
 
 def test():
-    model = "claude-3-haiku-20240307"
-    # model = "gemini-1.0-pro"
-    test_message = "pythonで円周率を表示するプログラムを実行してください。"
-    verbose = False
-    is_streaming = False
-    print("test_message=", test_message)
-    session = CodeInterpreterSession(model=model, verbose=verbose)
-    status = session.start_local()
-    print("status=", status)
-    if is_streaming:
-        # response_inner: CodeInterpreterResponse
-        response_inner = session.generate_response_stream(test_message)
-        for response_inner_chunk in response_inner:
-            print("response_inner_chunk.content=", response_inner.content)
-            print("response_inner_chunk code_log=", response_inner.code_log)
-    else:
-        # response_inner: CodeInterpreterResponse
-        response_inner = session.generate_response(test_message)
-        print("response_inner.content=", response_inner.content)
-        print("response_inner code_log=", response_inner.code_log)
+    sample = "ステップバイステップで2*5+2を計算して。"
+    llm, llm_tools, runnable_config = prepare_test_llm()
+    ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
+    planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
+    result = planner.invoke({"input": sample, "agent_scratchpad": "", "messages": [sample]})
+    print("result=", result.content)
 
 
 if __name__ == "__main__":

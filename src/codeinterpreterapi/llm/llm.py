@@ -151,10 +151,13 @@ class CodeInterpreterLlm:
         return llms
 
 
-def prepare_test_llm():
+def prepare_test_llm(is_smart: bool = False):
     load_dotenv(verbose=True, override=False)
 
-    llm = CodeInterpreterLlm.get_llm_switcher()
+    if is_smart:
+        llm = CodeInterpreterLlm.get_llm_smart()
+    else:
+        llm = CodeInterpreterLlm.get_llm_switcher()
     llm_tools = CodeInterpreterLlm.get_llm_switcher_tools()
     callbacks = [FullOutCallbackHandler()]
     configurable = {"session_id": "123"}

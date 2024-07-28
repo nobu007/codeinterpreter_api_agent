@@ -1,52 +1,62 @@
-from langchain import PromptTemplate, hub
+from typing import List, Union
+
 from langchain.agents import AgentExecutor
 from langchain.agents.agent import RunnableAgent
-from langchain.tools.render import render_text_description
 from langchain_core.runnables import Runnable
+from pydantic import BaseModel, Field
 
+from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
-from codeinterpreterapi.utils.output_parser import PlannerSingleOutputParser
+from codeinterpreterapi.planners.prompts import create_planner_agent_chat_prompt, create_planner_agent_prompt
+from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
+from codeinterpreterapi.utils.prompt import PromptUpdater
 from codeinterpreterapi.utils.runnable import create_complement_input
+
+
+class CodeInterpreterPlan(BaseModel):
+    '''Agent and Task definition. Plan and task is 1:1.'''
+
+    agent_name: str = Field(
+        description="The agent name for task. This is primary key. Agent responsible for task execution. Represents entity performing task."
+    )
+    task_description: str = Field(description="Descriptive text detailing task's purpose and execution.")
+    expected_output: str = Field(description="Clear definition of expected task outcome.")
+
+
+class CodeInterpreterPlanList(BaseModel):
+    '''Sequential plans for the task.'''
+
+    agent_task_list: List[CodeInterpreterPlan] = Field(
+        description="The list of CodeInterpreterPlan. It means agent name and so on."
+    )
 
 
 class CodeInterpreterPlanner:
     @staticmethod
-    def choose_planner(ci_params: CodeInterpreterParams) -> Runnable:
+    def choose_planner(ci_params: CodeInterpreterParams) -> Union[Runnable, AgentExecutor]:
         """
         Load a chat planner.
 
-        Args:
-            llm: Language model.
-            tools: List of tools this agent has access to.
-            is_ja: System prompt.
-
-        Returns:
-            LLMPlanner
-
-        <prompt: simple_react>
-        Input
-          tools:
-          tool_names:
-          input:
-          agent_scratchpad:
-        Output
-          content: Free text in str.
         """
-        # prompt_name_react = "nobu/simple_react"
-        prompt_name = "nobu/chat_planner"
-        if ci_params.is_ja:
-            prompt_name += "_ja"
-        prompt = hub.pull(prompt_name)
-        # prompt = CodeInterpreterPlanner.get_prompt()
+
+        is_chat_prompt = True
+        if is_chat_prompt:
+            prompt = create_planner_agent_chat_prompt()
+            prompt = PromptUpdater.update_and_show_chat_prompt(prompt, ci_params)
+        else:
+            prompt = create_planner_agent_prompt()
+            prompt = PromptUpdater.update_prompt(prompt, ci_params)
+            PromptUpdater.show_prompt(prompt)
+
+        # structured_llm
+        structured_llm = ci_params.llm.bind_tools(tools=[CodeInterpreterPlanList])
 
         # runnable
         runnable = (
-            create_complement_input(prompt)
-            | prompt
-            | ci_params.llm
+            create_complement_input(prompt) | prompt | structured_llm
             # | StrOutputParser()
-            | PlannerSingleOutputParser()
+            # | PlannerSingleOutputParser()
         )
         # runnable = assign_runnable_history(runnable, ci_params.runnable_config)
 
@@ -56,50 +66,23 @@ class CodeInterpreterPlanner:
         remapped_inputs = create_complement_input(prompt).invoke({})
         agent = RunnableAgent(runnable=runnable, input_keys=list(remapped_inputs.keys()))
 
-        # agent_executor
-        agent_executor = AgentExecutor(agent=agent, tools=[], verbose=ci_params.verbose)
+        # return executor or runnable
+        return_as_executor = False
+        if return_as_executor:
+            # TODO: handle step by step by original OutputParser
+            agent_executor = AgentExecutor(agent=agent, tools=ci_params.tools, verbose=ci_params.verbose)
+            return agent_executor
 
-        return agent_executor
-
-    @staticmethod
-    def update_prompt(prompt: PromptTemplate, ci_params: CodeInterpreterParams) -> PromptTemplate:
-        # Check if the prompt has the required input variables
-        missing_vars = {"tools", "tool_names", "agent_scratchpad"}.difference(
-            prompt.input_variables + list(prompt.partial_variables)
-        )
-        if missing_vars:
-            raise ValueError(f"Prompt missing required variables: {missing_vars}")
-
-        # Partial the prompt with tools and tool_names
-        prompt = prompt.partial(
-            tools=render_text_description(list(ci_params.tools)),
-            tool_names=", ".join([t.name for t in ci_params.tools]),
-        )
-        return prompt
-
-    @staticmethod
-    def get_prompt():
-        prompt_template = """
-    あなたは親切なアシスタントです。以下の制約条件を守ってタスクを完了させてください。
-
-    制約条件:
-    - 段階的に考え、各ステップで取るアクションを明確にすること。
-    - 必要な情報が不足している場合は、ユーザーに質問すること。
-    - タスクを完了するために十分な情報が得られたら、最終的な回答を出力すること。
-
-    タスク: {input}
-    agent_scratchpad: {agent_scratchpad}
-    """
-        prompt = PromptTemplate(input_variables=["input", "agent_scratchpad"], template=prompt_template)
-        return prompt
+        else:
+            return runnable
 
 
 def test():
-    sample = "ステップバイステップで2*5+2を計算して。"
     llm, llm_tools, runnable_config = prepare_test_llm()
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
+    _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
-    result = planner.invoke({"input": sample, "agent_scratchpad": ""})
+    result = planner.invoke({"input": "", "agent_scratchpad": "", "messages": [TestPrompt.svg_input_str]})
     print("result=", result)
 
 
