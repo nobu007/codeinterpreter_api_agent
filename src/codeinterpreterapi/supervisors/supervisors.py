@@ -140,7 +140,7 @@ class CodeInterpreterSupervisor:
         llm_with_structured_output = ci_params.llm.with_structured_output(RouteSchema)
         # supervisor_agent = prompt | ci_params.llm | output_parser
         # supervisor_agent_for_executor = prompt | ci_params.llm
-        supervisor_agent_structured_output = prompt | llm_with_structured_output
+        supervisor_agent_structured_output = planner | prompt | llm_with_structured_output
 
         ci_params.supervisor_agent = supervisor_agent_structured_output
 
