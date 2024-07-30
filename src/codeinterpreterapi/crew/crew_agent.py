@@ -9,7 +9,7 @@ from codeinterpreterapi.crew.custom_agent import (
 )
 from codeinterpreterapi.graphs.agent_wrapper_tool import AgentWrapperTool
 from codeinterpreterapi.llm.llm import prepare_test_llm
-from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
+from codeinterpreterapi.planners.planners import CodeInterpreterPlan, CodeInterpreterPlanList, CodeInterpreterPlanner
 from codeinterpreterapi.supervisors.supervisors import CodeInterpreterSupervisor
 from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 
@@ -44,38 +44,35 @@ class CodeInterpreterCrew:
             name_agent_dict[agent_def.agent_name] = agent
         return name_agent_dict
 
-    def create_tasks(self, final_goal: str, task_names_for_order: List[str]) -> List[Task]:
+    def create_tasks(self, final_goal: str, plan_list: CodeInterpreterPlanList) -> List[Task]:
         tasks = []
-        for task_name in task_names_for_order:
-            task = self.create_task(final_goal, task_name)
-            tasks.append(task)
+        for plan in plan_list.agent_task_list:
+            task = self.create_task(final_goal, plan)
+            if task is not None:
+                tasks.append(task)
         return tasks
 
-    def create_task(self, final_goal: str, task_name: str) -> Task:
+    def create_task(self, final_goal: str, plan: CodeInterpreterPlan) -> Task:
+        # find
         for agent_def in self.ci_params.agent_def_list:
-            task_description = "タスク（最終的なゴール）： " + final_goal
-            task_description += (
-                "\n\nサブタスク（これを達成したら完了として処理終了してください）： "
-                + agent_def.agent_acceptable_task_description
-            )
-            task = Task(
-                expected_output=agent_def.agent_expected_output,
-                description=task_description,
-                agent=self.name_agent_dict[task_name],
-            )
-            return task
+            if plan.agent_name == agent_def.agent_name:
+                task_description = "タスク（最終的なゴール）： " + final_goal
+                task_description += (
+                    "\n\nサブタスク（これを達成したら完了として処理終了してください）： " + plan.task_description
+                )
+                task = Task(
+                    expected_output=plan.expected_output,
+                    description=task_description,
+                    agent=self.name_agent_dict[plan.agent_name],
+                )
+                return task
 
-        print("WARN: no task found task_name=", task_name)
-        return Task(
-            expected_output="unknown",
-            description=task_name,
-            agent=self.agents[0],  # dummy,
-        )
+        print("WARN: no task found plan.agent_name=", plan.agent_name)
+        return None
 
-    def run(self, inputs: Dict):
+    def run(self, inputs: Dict, plan_list: CodeInterpreterPlanList):
         # update task description
-        task_names_for_order = ["main_function_create_agent", "code_split_agent"]
-        tasks = self.create_tasks(final_goal=inputs["input"], task_names_for_order=task_names_for_order)
+        tasks = self.create_tasks(final_goal=inputs["input"], plan_list=plan_list)
         my_crew = Crew(agents=self.agents, tasks=tasks)
         result = my_crew.kickoff(inputs=inputs)
         return result
@@ -88,7 +85,9 @@ def test():
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     _ = CodeInterpreterSupervisor(planner=planner, ci_params=ci_params)
     inputs = {"input": TestPrompt.svg_input_str}
-    result = CodeInterpreterCrew(ci_params).run(inputs)
+    plan = CodeInterpreterPlan(agent_name="main_function_create_agent", task_description="", expected_output="")
+    plan_list = CodeInterpreterPlanList(agent_task_list=[plan])
+    result = CodeInterpreterCrew(ci_params).run(inputs, plan_list)
     print(result)
 
 
