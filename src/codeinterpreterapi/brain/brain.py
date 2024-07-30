@@ -66,7 +66,7 @@ class CodeInterpreterBrain(Runnable):
 
     def initialize_supervisor(self):
         planner = CodeInterpreterPlanner.choose_planner(ci_params=self.ci_params)
-        self.supervisor = CodeInterpreterSupervisor.choose_supervisor(planner=planner, ci_params=self.ci_params)
+        self.supervisor = CodeInterpreterSupervisor(planner=planner, ci_params=self.ci_params)
 
     def initialize_thought(self):
         self.thought = CodeInterpreterToT.get_runnable_tot_chain(ci_params=self.ci_params)

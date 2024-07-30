@@ -75,7 +75,7 @@ def test():
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
-    _ = CodeInterpreterSupervisor.choose_supervisor(planner=planner, ci_params=ci_params)
+    _ = CodeInterpreterSupervisor(planner=planner, ci_params=ci_params)
 
     state_graph = MessageGraph()
     tools = AgentWrapperTool.create_agent_wrapper_tools(ci_params)
