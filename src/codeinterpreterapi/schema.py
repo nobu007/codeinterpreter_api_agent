@@ -1,9 +1,9 @@
 import asyncio
-from typing import Any
+from typing import Any, List
 
 from codeboxapi.schema import CodeBoxStatus
 from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.pydantic_v1 import BaseModel
+from langchain_core.pydantic_v1 import BaseModel, Field
 
 
 class File(BaseModel):
@@ -137,3 +137,21 @@ class SessionStatus(CodeBoxStatus):
 
     def __repr__(self) -> str:
         return f"<SessionStatus status={self.status}>"
+
+
+class CodeInterpreterPlan(BaseModel):
+    '''Agent and Task definition. Plan and task is 1:1.'''
+
+    agent_name: str = Field(
+        description="The agent name for task. This is primary key. Agent responsible for task execution. Represents entity performing task."
+    )
+    task_description: str = Field(description="Descriptive text detailing task's purpose and execution.")
+    expected_output: str = Field(description="Clear definition of expected task outcome.")
+
+
+class CodeInterpreterPlanList(BaseModel):
+    '''Sequential plans for the task.'''
+
+    agent_task_list: List[CodeInterpreterPlan] = Field(
+        description="The list of CodeInterpreterPlan. It means agent name and so on."
+    )

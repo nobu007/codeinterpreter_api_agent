@@ -20,6 +20,34 @@ SYSTEM_MESSAGE_TEMPLATE_JA = '''
 '''
 
 
+def create_supervisor_agent_prompt_next(is_ja: bool = True):
+    if is_ja:
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", SYSTEM_MESSAGE_TEMPLATE_JA),
+                MessagesPlaceholder(variable_name="messages"),
+                (
+                    "user",
+                    "上記の会話を踏まえて、次に誰が行動すべきでしょうか?"
+                    " それとも、終了すべきでしょうか? 次のいずれかを選択してください: {options}",
+                ),
+            ]
+        )
+    else:
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", SYSTEM_MESSAGE_TEMPLATE),
+                MessagesPlaceholder(variable_name="messages"),
+                (
+                    "user",
+                    "Given the conversation above, who should act next?"
+                    " Or should we FINISH? Select one of: {options}",
+                ),
+            ]
+        )
+    return prompt
+
+
 def create_supervisor_agent_prompt(is_ja: bool = True):
     if is_ja:
         prompt = ChatPromptTemplate.from_messages(

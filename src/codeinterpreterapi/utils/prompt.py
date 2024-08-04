@@ -13,7 +13,8 @@ from codeinterpreterapi.brain.params import CodeInterpreterParams
 class PromptUpdater:
     @staticmethod
     def show_prompt(prompt: PromptTemplate):
-        prompt_str = prompt.format()
+        dummy_input = {var: "" for var in prompt.input_variables}
+        prompt_str = prompt.format(**dummy_input)
         print(f"show_prompt: {prompt_str}")
 
     @staticmethod

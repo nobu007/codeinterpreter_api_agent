@@ -10,15 +10,17 @@ from langchain_core.runnables.utils import Input, Output
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
+from codeinterpreterapi.crew.crew_agent import CodeInterpreterCrew
 from codeinterpreterapi.llm.llm import prepare_test_llm
-from codeinterpreterapi.planners.planners import CodeInterpreterPlanList, CodeInterpreterPlanner
+from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
+from codeinterpreterapi.schema import CodeInterpreterPlanList
 from codeinterpreterapi.supervisors.prompts import create_supervisor_agent_prompt
 from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 
 
 class CodeInterpreterSupervisor:
     def __init__(self, planner: Runnable, ci_params: CodeInterpreterParams):
-        self.planner = planner
+        self.planner = ci_params.planner_agent
         self.ci_params = ci_params
         self.supervisor_chain = None
         self.initialize()
@@ -39,7 +41,7 @@ class CodeInterpreterSupervisor:
         options = ["FINISH"] + members
         print("options=", options)
 
-        # prompt
+        # prompt(for executor)
         prompt = create_supervisor_agent_prompt(self.ci_params.is_ja)
         prompt = prompt.partial(options=str(options), members=", ".join(members))
         input_variables = prompt.input_variables
@@ -49,20 +51,21 @@ class CodeInterpreterSupervisor:
             next: str = Field(..., description=f"The next route item. This is one of: {options}")
             # question: str = Field(..., description="The original question from user.")
 
-        # agent TODO: use RouteSchema to determine use crew or agent or agent executor
+        # agent
+        # TODO: use RouteSchema to determine use crew or agent or agent executor
         # llm_with_structured_output = self.ci_params.llm.with_structured_output(RouteSchema)
-        # supervisor_agent = prompt | ci_params.llm | output_parser
+        supervisor_agent = prompt | self.ci_params.llm
         # supervisor_agent_for_executor = prompt | ci_params.llm
         # self.supervisor_chain = self.planner | prompt | llm_with_structured_output
         self.supervisor_chain = self.planner
-
-        self.ci_params.supervisor_agent = self.supervisor_chain
+        self.ci_params.supervisor_agent = supervisor_agent
 
         # config
-        if self.ci_params.runnable_config:
-            self.supervisor_chain = self.supervisor_chain.with_config(self.ci_params.runnable_config)
+        # if self.ci_params.runnable_config:
+        #     self.supervisor_chain = self.supervisor_chain.with_config(self.ci_params.runnable_config)
 
     def get_executor(self) -> AgentExecutor:
+        # TODO: use own executor(not crewai)
         # agent_executor
         # agent_executor = AgentExecutor.from_agent_and_tools(
         #     agent=supervisor_agent_for_executor,
@@ -71,10 +74,13 @@ class CodeInterpreterSupervisor:
         #     callbacks=[],
         # )
         # TODO: impl
-        return self.supervisor_agent_structured_output
+        return self.supervisor_chain
 
     def invoke(self, input: Input) -> Output:
-        return self.supervisor_chain.invoke(input=input)
+        result = self.planner.invoke(input)
+        print("type result=", type(result))
+        result = self.ci_params.crew_agent.run(input, result)
+        return result
 
     def execute_plan(self, plan_list: CodeInterpreterPlanList) -> Dict[str, Any]:
         # AgentExecutorの初期化
@@ -82,7 +88,7 @@ class CodeInterpreterSupervisor:
 
         results = []
 
-        for plan in plan_list:
+        for plan in plan_list.agent_task_list:
             print(f"\nExecuting task: {plan.task_description}")
             print(f"Agent: {plan.agent_name}")
             print(f"Expected output: {plan.expected_output}")
@@ -116,9 +122,13 @@ def test():
     llm, llm_tools, runnable_config = prepare_test_llm()
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
+    crew_agent = CodeInterpreterCrew(ci_params=ci_params)
+    ci_params.crew_agent = crew_agent
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     supervisor = CodeInterpreterSupervisor(planner=planner, ci_params=ci_params)
-    result = supervisor.invoke({"input": TestPrompt.svg_input_str, "messages": [TestPrompt.svg_input_str]})
+    result = supervisor.invoke(
+        {"input": TestPrompt.svg_input_str, "agent_scratchpad": "", "messages": [TestPrompt.svg_input_str]}
+    )
     print("result=", result)
 
 

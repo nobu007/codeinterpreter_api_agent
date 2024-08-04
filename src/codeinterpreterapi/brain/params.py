@@ -41,7 +41,9 @@ class CodeInterpreterParams(BaseModel):
     is_ja: Optional[bool] = True
     runnable_config: Optional[RunnableConfig] = None
     agent_def_list: Optional[List[AgentDefinition]] = []
+    planner_agent: Optional[Runnable] = None
     supervisor_agent: Optional[Runnable] = None
+    crew_agent: Optional[Runnable] = None
 
     @classmethod
     def get_test_params(
