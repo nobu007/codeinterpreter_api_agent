@@ -169,6 +169,18 @@ class CodeInterpreterSession:
             await self.ci_params.codebox.aupload(file.name, file.content)
         request.content += "**File(s) are now available in the cwd. **\n"
 
+    def _output_handler_pre(self, response: Any) -> str:
+        print("response(type)=", type(response))
+        print("response=", response)
+        if isinstance(response, str):
+            output_str = response
+        elif "output" in response:
+            output_str = response["output"]
+        else:
+            output_str = "response=" + str(response)
+        print("generate_response brain.invoke output_str=", output_str)
+        return output_str
+
     def _output_handler(self, final_response: str) -> CodeInterpreterResponse:
         """Embed images in the response"""
         for file in self.output_files:
@@ -242,13 +254,8 @@ class CodeInterpreterSession:
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             response = self.brain.invoke(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
-            print("response(type)=", type(response))
-            print("response=", response)
-
-            output = response["output"]
-            print("generate_response brain.invoke output=", output)
-            return self._output_handler(output)
-            # return output
+            output_str = self._output_handler_pre(response)
+            return self._output_handler(output_str)
         except Exception as e:
             traceback_str = "\n"
             if self.verbose:
@@ -280,9 +287,8 @@ class CodeInterpreterSession:
             response = await self.brain.ainvoke(input=user_request.content)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
 
-            output = response["output"]
-            print("agenerate_response brain.ainvoke output=", output)
-            return await self._aoutput_handler(output)
+            output_str = self._output_handler_pre(response)
+            return await self._aoutput_handler(output_str)
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()

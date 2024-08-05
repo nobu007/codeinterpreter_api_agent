@@ -13,6 +13,7 @@ from codeinterpreterapi.config import settings
 from codeinterpreterapi.crew.crew_agent import CodeInterpreterCrew
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
+from codeinterpreterapi.schema import CodeInterpreterPlanList
 from codeinterpreterapi.supervisors.supervisors import CodeInterpreterSupervisor
 from codeinterpreterapi.thoughts.thoughts import CodeInterpreterToT
 from codeinterpreterapi.tools.tools import CodeInterpreterTools
@@ -30,7 +31,7 @@ class CodeInterpreterBrain(Runnable):
         self.verbose = self.ci_params.verbose
 
         # brain logic vals
-        self.current_agent: AgentName = AgentName.CREW
+        self.current_agent: AgentName = AgentName.SUPERVISOR
         self.current_agent_score: int = 0
 
         # agents
@@ -39,10 +40,11 @@ class CodeInterpreterBrain(Runnable):
         self.llm_planner: Optional[Runnable] = None
         self.supervisor: Optional[AgentExecutor] = None
         self.thought: Optional[Runnable] = None
+        self.crew_agent: Optional[Runnable] = None
 
         # agent_results
         self.agent_executor_result: Optional[str] = ""
-        self.llm_planner_result: Optional[str] = ""
+        self.plan_list: Optional[CodeInterpreterPlanList] = None
         self.supervisor_result: Optional[str] = ""
         self.thought_result: Optional[str] = ""
         self.crew_result: Optional[str] = ""
@@ -52,10 +54,10 @@ class CodeInterpreterBrain(Runnable):
 
     def initialize(self):
         self.initialize_agent_executor()
+        self.initialize_crew()
         self.initialize_llm_planner()
         self.initialize_supervisor()
         self.initialize_thought()
-        self.initialize_crew()
 
     def initialize_agent_executor(self):
         self.agent_executors = CodeInterpreterAgent.choose_agent_executors(ci_params=self.ci_params)
@@ -72,7 +74,8 @@ class CodeInterpreterBrain(Runnable):
         self.thought = CodeInterpreterToT.get_runnable_tot_chain(ci_params=self.ci_params)
 
     def initialize_crew(self):
-        self.crew = CodeInterpreterCrew(ci_params=self.ci_params)
+        self.crew_agent = CodeInterpreterCrew(ci_params=self.ci_params)
+        self.ci_params.crew_agent = self.crew_agent
 
     def prepare_input(self, input: Input):
         ca = self.current_agent
@@ -95,7 +98,7 @@ class CodeInterpreterBrain(Runnable):
 
         # set agent_results
         input['agent_executor_result'] = self.agent_executor_result
-        input['llm_planner_result'] = self.llm_planner_result
+        input['plan_list'] = self.plan_list
         input['supervisor_result'] = self.supervisor_result
         input['thought_result'] = self.thought_result
         input['crew_result'] = self.crew_result
@@ -112,16 +115,16 @@ class CodeInterpreterBrain(Runnable):
                 self.agent_executor_result = output
             elif ca == AgentName.LLM_PLANNER:
                 output = self.llm_planner.invoke(input)
-                self.llm_planner_result = output
+                self.plan_list = output
             elif ca == AgentName.SUPERVISOR:
-                output = self.supervisor.invoke(input, config=runnable_config)
+                output = self.supervisor.invoke(input)
                 self.supervisor_result = output
             elif ca == AgentName.THOUGHT:
                 output = self.supervisor.invoke(input, config=runnable_config)
                 self.thought_result = output
             else:
                 # ca == AgentName.CREW
-                output = self.crew.run(input)
+                output = self.crew_agent.run(input, self.plan_list)
                 self.crew_result = output
         except Exception as e:
             if self.verbose:
@@ -174,8 +177,8 @@ class CodeInterpreterBrain(Runnable):
         elif ca == AgentName.LLM_PLANNER:
             return AgentName.SUPERVISOR
         elif ca == AgentName.SUPERVISOR:
-            # return AgentName.THOUGHT #disable now
-            return AgentName.AGENT_EXECUTOR
+            # always use SUPERVISOR
+            return AgentName.SUPERVISOR
         elif ca == AgentName.THOUGHT:
             self.agent_executor = random.choice(self.agent_executors)
             return AgentName.AGENT_EXECUTOR

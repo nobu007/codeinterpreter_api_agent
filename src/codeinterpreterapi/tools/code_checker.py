@@ -1,3 +1,5 @@
+import os
+
 from langchain_core.tools import StructuredTool
 
 from codeinterpreterapi.brain.params import CodeInterpreterParams
@@ -31,11 +33,28 @@ class CodeChecker:
 
         return tools
 
-    def _get_latest_code(self):
-        return FileUtil.read_python_file()
+    def _get__get_latest_code_common(self, filename=""):
+        target_dir = "./"
+        target_filename = "main.py"
 
-    async def _aget_latest_code(self):
-        return FileUtil.read_python_file()
+        if os.path.isdir(filename):
+            target_dir = filename
+            target_path = os.path.join(target_dir, target_filename)
+        elif os.path.isfile(target_filename):
+            target_path = target_filename
+        else:
+            target_path = os.path.join(target_dir, target_filename)
+        if os.path.isfile(target_path):
+            FileUtil.read_python_file(filename=target_path)
+        else:
+            # 初期状態または異常時
+            return ""
+
+    def _get_latest_code(self, filename=""):
+        return self._get__get_latest_code_common(filename)
+
+    async def _aget_latest_code(self, filename=""):
+        return self._get__get_latest_code_common(filename)
 
 
 def test():

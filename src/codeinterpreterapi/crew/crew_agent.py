@@ -71,6 +71,8 @@ class CodeInterpreterCrew:
 
     def run(self, inputs: Dict, plan_list: CodeInterpreterPlanList):
         # update task description
+        if plan_list is None:
+            return {}
         tasks = self.create_tasks(final_goal=inputs["input"], plan_list=plan_list)
         my_crew = Crew(agents=self.agents, tasks=tasks)
         result = my_crew.kickoff(inputs=inputs)
