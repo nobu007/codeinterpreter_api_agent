@@ -1,4 +1,5 @@
 from typing import List, Optional
+from uuid import UUID
 
 from codeboxapi import CodeBox  # type: ignore
 from gui_agent_loop_core.schema.agent.schema import AgentDefinition
@@ -27,6 +28,7 @@ def test_multiply(first: str, second: str) -> str:
 
 class CodeInterpreterParams(BaseModel):
     codebox: Optional[CodeBox] = None
+    session_id: Optional[UUID] = None
     llm_lite: Optional[Runnable] = None
     llm_fast: Optional[Runnable] = None
     llm_smart: Optional[Runnable] = None

@@ -13,6 +13,7 @@ from codeinterpreterapi.agents.structured_chat.prompts import create_structured_
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.utils.runnable import create_complement_input
+from codeinterpreterapi.utils.runnable_history import assign_runnable_history
 
 
 def create_structured_chat_agent_wrapper(
@@ -171,7 +172,7 @@ def create_structured_chat_agent(
         | llm_with_stop
         | output_parser
     )
-    # agent = assign_runnable_history(agent, runnable_config)
+    agent = assign_runnable_history(agent, runnable_config)
     return agent
 
 
