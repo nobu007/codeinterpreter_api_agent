@@ -146,7 +146,7 @@ class CodeInterpreterBrain(Runnable):
         return [self.run(input_item) for input_item in inputs]
 
     async def ainvoke(self, input: Input, config: Optional[RunnableConfig] = None, **kwargs: Any) -> Output:
-        raise NotImplementedError("Async not implemented yet")
+        return self.run(input, config)
 
     async def abatch(
         self,
@@ -156,7 +156,7 @@ class CodeInterpreterBrain(Runnable):
         return_exceptions: bool = False,
         **kwargs: Optional[Any],
     ) -> List[Output]:
-        raise NotImplementedError("Async not implemented yet")
+        return [self.run(input_item) for input_item in inputs]
 
     def update_agent_score(self):
         self.current_agent_score = CodeInterpreterBrain.AGENT_SCORE_MIN - 1  # temp: switch every time

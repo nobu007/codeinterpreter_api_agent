@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterator, List, Optional, Type, Union
 from uuid import UUID
 
 from codeboxapi import CodeBox  # type: ignore
+from codeboxapi.schema import CodeBoxStatus  # type: ignore
 from langchain.callbacks.base import BaseCallbackHandler, Callbacks
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 from langchain_community.chat_message_histories.postgres import PostgresChatMessageHistory
@@ -139,29 +140,35 @@ class CodeInterpreterSession:
 
     def start(self) -> SessionStatus:
         print("start")
-        status = SessionStatus.from_codebox_status(self.ci_params.codebox.start())
+        codebox_status = CodeBoxStatus(status="unknown")
+        if self.ci_params.codebox:
+            codebox_status = self.ci_params.codebox.start()
+            self.ci_params.codebox.run(
+                f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
+            )
         self.brain.initialize()
-        self.ci_params.codebox.run(
-            f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
-        )
-        return status
+        return SessionStatus.from_codebox_status(codebox_status)
 
     async def astart(self) -> SessionStatus:
         print("astart")
-        status = SessionStatus.from_codebox_status(await self.ci_params.codebox.astart())
+        codebox_status = CodeBoxStatus(status="unknown")
+        if self.ci_params.codebox:
+            codebox_status = self.ci_params.codebox.astart()
+            self.ci_params.codebox.arun(
+                f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
+            )
         self.brain.initialize()
-        await self.ci_params.codebox.arun(
-            f"!pip install -q {' '.join(settings.CUSTOM_PACKAGES)}",
-        )
-        return status
+        return SessionStatus.from_codebox_status(codebox_status)
 
     def start_local(self) -> SessionStatus:
+        # TODO: delete it and use start()
         print("start_local")
         self.brain.initialize()
         status = SessionStatus(status="started")
         return status
 
     async def astart_local(self) -> SessionStatus:
+        # TODO: delete it and use astart()
         print("astart_local")
         status = self.start_local()
         self.brain.initialize()
@@ -260,8 +267,9 @@ class CodeInterpreterSession:
         response = self._output_handler_post(final_response)
         return response
 
-    async def _aoutput_handler(self, final_response: str) -> CodeInterpreterResponse:
+    async def _aoutput_handler(self, response: str) -> CodeInterpreterResponse:
         """Embed images in the response"""
+        final_response = self._output_handler_pre(response)
         for file in self.output_files:
             if str(file.name) in final_response:
                 # rm ![Any](file.name) from the response
@@ -335,13 +343,12 @@ class CodeInterpreterSession:
         user_request = UserRequest(content=user_msg, files=files)
         try:
             await self._ainput_handler(user_request)
-
+            agent_scratchpad = ""
+            input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
-            response = await self.brain.ainvoke(input=user_request.content)
+            response = await self.brain.ainvoke(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
-
-            output_str = self._output_handler_pre(response)
-            return await self._aoutput_handler(output_str)
+            return await self._aoutput_handler(response)
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
@@ -446,13 +453,19 @@ class CodeInterpreterSession:
             print(msg)
 
     def stop(self) -> SessionStatus:
-        return SessionStatus.from_codebox_status(self.ci_params.codebox.stop())
+        codebox_status = CodeBoxStatus(status="unknown")
+        if self.ci_params.codebox:
+            codebox_status = self.ci_params.codebox.stop()
+        return SessionStatus.from_codebox_status(codebox_status)
 
     async def astop(self) -> SessionStatus:
-        return SessionStatus.from_codebox_status(await self.ci_params.codebox.astop())
+        codebox_status = CodeBoxStatus(status="unknown")
+        if self.ci_params.codebox:
+            codebox_status = await self.ci_params.codebox.astop()
+        return SessionStatus.from_codebox_status(codebox_status)
 
     def __enter__(self) -> "CodeInterpreterSession":
-        if self.is_local:
+        if self.ci_params.is_local:
             self.start_local()
         else:
             self.start()
@@ -476,4 +489,5 @@ class CodeInterpreterSession:
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
+        await self.astop()
         await self.astop()

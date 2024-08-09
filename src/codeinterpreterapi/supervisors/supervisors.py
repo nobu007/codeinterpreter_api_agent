@@ -23,6 +23,7 @@ class CodeInterpreterSupervisor:
         self.planner = ci_params.planner_agent
         self.ci_params = ci_params
         self.supervisor_chain = None
+        self.supervisor_chain_no_agent = None
         self.initialize()
 
     def initialize(self) -> None:
@@ -64,6 +65,9 @@ class CodeInterpreterSupervisor:
         # if self.ci_params.runnable_config:
         #     self.supervisor_chain = self.supervisor_chain.with_config(self.ci_params.runnable_config)
 
+        # supervisor_chain_no_agent
+        self.supervisor_chain_no_agent = self.ci_params.llm
+
     def get_executor(self) -> AgentExecutor:
         # TODO: use own executor(not crewai)
         # agent_executor
@@ -79,7 +83,17 @@ class CodeInterpreterSupervisor:
     def invoke(self, input: Input) -> Output:
         result = self.planner.invoke(input)
         print("type result=", type(result))
-        result = self.ci_params.crew_agent.run(input, result)
+        if isinstance(result, CodeInterpreterPlanList):
+            plan_list: CodeInterpreterPlanList = result
+            if len(plan_list.agent_task_list) > 0:
+                print("supervisor.invoke use crew_agent plan_list=", plan_list)
+                result = self.ci_params.crew_agent.run(input, result)
+            else:
+                print("supervisor.invoke no_agent plan_list=", plan_list)
+                result = self.supervisor_chain_no_agent.invoke(input)
+        else:
+            print("supervisor.invoke no_agent no plan_list")
+            result = self.supervisor_chain_no_agent.invoke(input)
         return result
 
     def execute_plan(self, plan_list: CodeInterpreterPlanList) -> Dict[str, Any]:
@@ -119,6 +133,11 @@ class CodeInterpreterSupervisor:
 
 
 def test():
+    use_simple_prompt = True
+    if use_simple_prompt:
+        test_prompt = TestPrompt.python_input_str
+    else:
+        test_prompt = TestPrompt.svg_input_str
     llm, llm_tools, runnable_config = prepare_test_llm()
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
@@ -126,9 +145,7 @@ def test():
     ci_params.crew_agent = crew_agent
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     supervisor = CodeInterpreterSupervisor(planner=planner, ci_params=ci_params)
-    result = supervisor.invoke(
-        {"input": TestPrompt.svg_input_str, "agent_scratchpad": "", "messages": [TestPrompt.svg_input_str]}
-    )
+    result = supervisor.invoke({"input": test_prompt, "agent_scratchpad": "", "messages": [test_prompt]})
     print("result=", result)
 
 
