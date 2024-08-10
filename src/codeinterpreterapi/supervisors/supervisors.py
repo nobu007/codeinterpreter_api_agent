@@ -55,15 +55,16 @@ class CodeInterpreterSupervisor:
         # agent
         # TODO: use RouteSchema to determine use crew or agent or agent executor
         # llm_with_structured_output = self.ci_params.llm.with_structured_output(RouteSchema)
-        supervisor_agent = prompt | self.ci_params.llm
+        runnable = prompt | self.ci_params.llm
+
+        # config
+        if self.ci_params.runnable_config:
+            runnable = runnable.with_config(self.ci_params.runnable_config)
+
         # supervisor_agent_for_executor = prompt | ci_params.llm
         # self.supervisor_chain = self.planner | prompt | llm_with_structured_output
         self.supervisor_chain = self.planner
-        self.ci_params.supervisor_agent = supervisor_agent
-
-        # config
-        # if self.ci_params.runnable_config:
-        #     self.supervisor_chain = self.supervisor_chain.with_config(self.ci_params.runnable_config)
+        self.ci_params.supervisor_agent = runnable
 
         # supervisor_chain_no_agent
         self.supervisor_chain_no_agent = self.ci_params.llm

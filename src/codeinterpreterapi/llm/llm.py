@@ -12,7 +12,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
 from langchain_google_genai._common import SafetySettingDict
 from langchain_google_genai._function_utils import _ToolConfigDict
 
-from codeinterpreterapi.callbacks.callbacks import FullOutCallbackHandler
+from codeinterpreterapi.callbacks.markdown.callbacks import MarkdownFileCallbackHandler
+from codeinterpreterapi.callbacks.stdout.callbacks import FullOutCallbackHandler
 from codeinterpreterapi.config import settings
 
 
@@ -159,7 +160,7 @@ def prepare_test_llm(is_smart: bool = False):
     else:
         llm = CodeInterpreterLlm.get_llm_switcher()
     llm_tools = CodeInterpreterLlm.get_llm_switcher_tools()
-    callbacks = [FullOutCallbackHandler()]
+    callbacks = [FullOutCallbackHandler(), MarkdownFileCallbackHandler("langchain_log_test.md")]
     configurable = {"session_id": "123"}
     runnable_config = RunnableConfig(callbacks=callbacks, configurable=configurable)
     llm = llm.with_config(config=runnable_config)

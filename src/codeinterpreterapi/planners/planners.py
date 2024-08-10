@@ -88,6 +88,10 @@ class CodeInterpreterPlanner:
         runnable = prompt | structured_llm
         ci_params.planner_agent = runnable
 
+        # config
+        if ci_params.runnable_config:
+            runnable = runnable.with_config(ci_params.runnable_config)
+
         # agent
         agent = RunnableAgent(runnable=runnable, input_keys=list(prompt.input_variables))
 
@@ -95,7 +99,9 @@ class CodeInterpreterPlanner:
         return_as_executor = False
         if return_as_executor:
             # TODO: handle step by step by original OutputParser
-            agent_executor = AgentExecutor(agent=agent, tools=ci_params.tools, verbose=ci_params.verbose)
+            agent_executor = AgentExecutor(
+                agent=agent, tools=ci_params.tools, verbose=ci_params.verbose, callbacks=ci_params.callbacks
+            )
             return agent_executor
 
         else:

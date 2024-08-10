@@ -7,7 +7,7 @@ from langgraph.graph import END, StateGraph
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
-from codeinterpreterapi.callbacks.callbacks import show_callback_info
+from codeinterpreterapi.callbacks.util import show_callback_info
 from codeinterpreterapi.graphs.tool_node.tool_node import create_agent_nodes
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.planners.planners import CodeInterpreterPlanner

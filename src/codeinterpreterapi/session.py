@@ -19,6 +19,7 @@ from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.brain.brain import CodeInterpreterBrain
 from codeinterpreterapi.brain.params import CodeInterpreterParams
+from codeinterpreterapi.callbacks.markdown.callbacks import MarkdownFileCallbackHandler
 from codeinterpreterapi.chains import aremove_download_link
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
@@ -101,7 +102,8 @@ class CodeInterpreterSession:
         init_session_id = "12345678-1234-1234-1234-123456789abc"
         configurable = {"session_id": init_session_id}  # TODO: set session_id
         runnable_config = RunnableConfig(
-            configurable=configurable, callbacks=[AgentCallbackHandler(self._output_handler)]
+            configurable=configurable,
+            callbacks=[AgentCallbackHandler(self._output_handler), MarkdownFileCallbackHandler("langchain_log.md")],
         )
 
         # ci_params = {}
