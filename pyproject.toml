@@ -97,6 +97,7 @@ select = ["E", "F", "I"]
 disable = [
   "global-statement",
   "missing-docstring",
+  "broad-exception-caught",
 ]
 
 [tool.black]
