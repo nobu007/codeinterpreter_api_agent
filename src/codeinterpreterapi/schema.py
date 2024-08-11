@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, List
+from typing import Any, List, Optional
 
 from codeboxapi.schema import CodeBoxStatus
 from langchain_core.messages import AIMessage, HumanMessage
@@ -113,8 +113,8 @@ class CodeInterpreterResponse(AIMessage):
     code_log: list[tuple[str, str]] = []
     """
 
-    files: list[File] = []
-    code_log: list[tuple[str, str]] = []
+    files: Optional[list[File]] = []
+    code_log: Optional[dict[str, str]] = []
     agent_name: str = ""
 
     def show(self) -> None:
@@ -140,18 +140,25 @@ class SessionStatus(CodeBoxStatus):
 
 
 class CodeInterpreterPlan(BaseModel):
-    '''Agent and Task definition. Plan and task is 1:1.'''
+    '''単一PlanのAgentとTaskの説明です。
+    PlanとAgentとTaskは常に1:1:1の関係です。
+    '''
 
     agent_name: str = Field(
-        description="The agent name for task. This is primary key. Agent responsible for task execution. Represents entity performing task."
+        description="Agentの名前です。タスクの名前も、このagent_nameと常に同じになり、primary keyとして使われます。利用可能な文字は[a-Z_]です。task likeな名前にしてください。"
     )
-    task_description: str = Field(description="Descriptive text detailing task's purpose and execution.")
-    expected_output: str = Field(description="Clear definition of expected task outcome.")
+    task_description: str = Field(
+        description="タスクの説明です。可能な範囲でpurpose, execution plan, input, outputの詳細を含めます。"
+    )
+    expected_output: str = Field(
+        description="タスクの最終的な出力形式を明確に定義します。例えばjson/csvというフォーマットや、カラム名やサイズ情報です。"
+    )
 
 
 class CodeInterpreterPlanList(BaseModel):
-    '''Sequential plans for the task.'''
+    '''CodeInterpreterPlanの配列をもつ計画全体です。'''
 
-    agent_task_list: List[CodeInterpreterPlan] = Field(
-        description="The list of CodeInterpreterPlan. It means agent name and so on."
+    reliability: int = Field(
+        description="計画の信頼度[0-100]です。100が完全な計画を意味します。50未満だと不完全計画でオリジナルの問題を直接llmに渡した方が良い結果になります。"
     )
+    agent_task_list: List[CodeInterpreterPlan] = Field(description="CodeInterpreterPlanの配列です。")

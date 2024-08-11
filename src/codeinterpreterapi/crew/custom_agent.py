@@ -30,14 +30,16 @@ class CustomAgent(BaseAgent):
 
     def execute_task(self, task: Any, context: Optional[str] = None, tools: Optional[List[Any]] = None):
         # AgentExecutorを使用してタスクを実行
-        print("execute_task task=", task)
+        # print("execute_task task=", task)
         print("execute_task context=", context)
+        print("execute_task tools=", tools)
         input_dict = {}
         input_dict["input"] = task.description
         input_dict["question"] = task.prompt_context
         input_dict["message"] = "タスクを実行してください。\n" + task.expected_output
         result = self.agent_executor.invoke(input=input_dict)
         print("execute_task result=", result)
+        # TODO: return full dict when crewai is updated
         return result["output"]
 
     def create_agent_executor(self, tools=None) -> None:
@@ -54,6 +56,10 @@ class CustomAgent(BaseAgent):
         return []
 
     def get_output_converter(self, llm, text, model, instructions):
+        print("get_output_converter llm=", type(llm))
+        print("get_output_converter text=", type(text))
+        print("get_output_converter model=", type(model))
+        print("get_output_converter instructions=", type(instructions))
         return lambda x: x  # デフォルトでは変換なし
 
     def execute(self, task_description: str, context: Optional[List[str]] = None):

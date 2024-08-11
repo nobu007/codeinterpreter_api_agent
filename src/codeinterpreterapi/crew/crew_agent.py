@@ -85,7 +85,7 @@ def test():
     _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
     inputs = {"input": TestPrompt.svg_input_str}
     plan = CodeInterpreterPlan(agent_name="main_function_create_agent", task_description="", expected_output="")
-    plan_list = CodeInterpreterPlanList(agent_task_list=[plan, plan])
+    plan_list = CodeInterpreterPlanList(reliability=80, agent_task_list=[plan, plan])
     result = CodeInterpreterCrew(ci_params).run(inputs, plan_list)
     print(result)
 

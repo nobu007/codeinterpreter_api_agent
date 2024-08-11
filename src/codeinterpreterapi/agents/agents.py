@@ -36,8 +36,8 @@ class CodeInterpreterAgent:
                 config = yaml.safe_load(f)
 
             try:
-                print(f"Agent: {agent_name}")
-                print(f"config: {config}")
+                print(f"choose_agent_executors Agent: {agent_name}")
+                # print(f"config: {config}")
                 agent_def = AgentDefinition(**config["agent_definition"])
                 agent_def.build_prompt()
                 print(agent_def)

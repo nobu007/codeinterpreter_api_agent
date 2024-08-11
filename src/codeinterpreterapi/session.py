@@ -1,7 +1,7 @@
 import re
 import traceback
 from types import TracebackType
-from typing import Any, Dict, Iterator, List, Optional, Type, Union
+from typing import Any, AsyncGenerator, Dict, Iterator, List, Optional, Type, Union
 from uuid import UUID
 
 from codeboxapi import CodeBox  # type: ignore
@@ -48,7 +48,7 @@ class AgentCallbackHandler(BaseCallbackHandler):
 
     def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> Any:
         """Run when chain ends running."""
-        print("AgentCallbackHandler on_chain_end")
+        print("AgentCallbackHandler on_chain_end type(outputs)=", type(outputs))
         self.agent_callback_func(outputs)
 
     def on_chat_model_start(
@@ -127,7 +127,7 @@ class CodeInterpreterSession:
 
         self.input_files: list[File] = []
         self.output_files: list[File] = []
-        self.code_log: list[tuple[str, str]] = []
+        self.output_code_log: list[tuple[str, str]] = []
 
     @classmethod
     def from_id(cls, session_id: UUID, **kwargs: Any) -> "CodeInterpreterSession":
@@ -227,19 +227,28 @@ class CodeInterpreterSession:
         request.content += "**File(s) are now available in the cwd. **\n"
 
     def _output_handler_pre(self, response: Any) -> str:
-        print("response(type)=", type(response))
-        print("response=", response)
+        print("_output_handler_pre response(type)=", type(response))
         if isinstance(response, str):
             output_str = response
-        elif "output" in response:
-            output_str = response["output"]
+        elif isinstance(response, dict):
+            output_str = ""
+            code_log_item = {}
+            if "output" in response:
+                output_str = response["output"]
+            if "tool" in response:
+                code_log_item["tool"] = str(response["tool"])
+            if "tool_input" in response:
+                code_log_item["tool_input"] = str(response["tool_input"])
+            if "log" in response:
+                code_log_item["log"] = str(response["log"])
+            self.output_code_log = code_log_item
         else:
             output_str = "response=" + str(response)
-        print("generate_response brain.invoke output_str=", output_str)
         return output_str
 
     def _output_handler_post(self, final_response: str) -> CodeInterpreterResponse:
         """Embed images in the response"""
+        print("_output_handler_post final_response(type)=", type(final_response))
         for file in self.output_files:
             if str(file.name) in final_response:
                 # rm ![Any](file.name) from the response
@@ -253,9 +262,9 @@ class CodeInterpreterSession:
         #             print("Error while removing download links:", e)
 
         output_files = self.output_files
-        code_log = self.code_log
+        code_log = self.output_code_log
         self.output_files = []
-        self.code_log = []
+        self.output_code_log = []
 
         print("_output_handler self.brain.current_agent=", self.brain.current_agent)
         response = CodeInterpreterResponse(
@@ -285,9 +294,9 @@ class CodeInterpreterSession:
                     print("Error while removing download links:", e)
 
         output_files = self.output_files
-        code_log = self.code_log
+        code_log = self.output_code_log
         self.output_files = []
-        self.code_log = []
+        self.output_code_log = []
 
         response = CodeInterpreterResponse(content=final_response, files=output_files, code_log=code_log)
         return response
@@ -312,7 +321,7 @@ class CodeInterpreterSession:
         user_request = UserRequest(content=user_msg, files=files)
         try:
             self._input_handler(user_request)
-            print("user_request.content=", user_request.content)
+            print("generate_response type(user_request.content)=", type(user_request.content))
             agent_scratchpad = ""
             input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
@@ -339,9 +348,11 @@ class CodeInterpreterSession:
     async def agenerate_response(
         self,
         user_msg: str,
-        files: list[File] = [],
+        files: list[File] = None,
     ) -> CodeInterpreterResponse:
         """Generate a Code Interpreter response based on the user's input."""
+        if files is None:
+            files = None
         user_request = UserRequest(content=user_msg, files=files)
         try:
             await self._ainput_handler(user_request)
@@ -379,11 +390,11 @@ class CodeInterpreterSession:
             self._input_handler(user_request)
             agent_scratchpad = ""
             input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
-            print("llm stream start")
+            print("generate_response_stream type(user_request.content)=", user_request.content)
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             response_stream = self.brain.stream(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
-            print("llm stream response(type)=", type(response_stream))
+            print("generate_response_stream type(response_stream)=", type(response_stream))
 
             full_output = ""
             for chunk in response_stream:
@@ -408,7 +419,7 @@ class CodeInterpreterSession:
         self,
         user_msg: str,
         files: list[File] = None,
-    ) -> CodeInterpreterResponse:
+    ) -> AsyncGenerator[CodeInterpreterResponse, None]:
         """Generate a Code Interpreter response based on the user's input."""
         if files is None:
             files = []
@@ -416,20 +427,17 @@ class CodeInterpreterSession:
         try:
             await self._ainput_handler(user_request)
 
-            print("llm astream start")
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             response = self.brain.astream(input=user_request.content)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
-            print("llm astream response(type)=", type(response))
-            print("llm astream response=", response)
 
             full_output = ""
             async for chunk in response:
-                yield chunk
                 full_output += chunk["output"]
 
             print("agenerate_response_stream brain.astream full_output=", full_output)
-            await self._aoutput_handler(full_output)
+            ci_response: CodeInterpreterResponse = await self._aoutput_handler(full_output)
+            yield ci_response
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()

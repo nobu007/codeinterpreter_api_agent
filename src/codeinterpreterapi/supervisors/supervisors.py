@@ -83,7 +83,7 @@ class CodeInterpreterSupervisor:
 
     def invoke(self, input: Input) -> Output:
         result = self.planner.invoke(input)
-        print("type result=", type(result))
+        print("supervisor.invoke type(result)=", type(result))
         if isinstance(result, CodeInterpreterPlanList):
             plan_list: CodeInterpreterPlanList = result
             if len(plan_list.agent_task_list) > 0:
@@ -98,6 +98,7 @@ class CodeInterpreterSupervisor:
         return result
 
     def execute_plan(self, plan_list: CodeInterpreterPlanList) -> Dict[str, Any]:
+        print("supervisor.execute_plan type(plan_list)=", type(plan_list))
         # AgentExecutorの初期化
         agent = self.get_executor()
 

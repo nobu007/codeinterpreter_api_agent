@@ -24,7 +24,6 @@ class FileUtil:
         else:
             print("FileUtil write_python_file regular string by ast.literal_eval()")
             code_content = ast.literal_eval(f'"""{code}"""')
-        print("code_content=", code_content)
 
         if settings.PYTHON_OUT_FILE:
             python_file_path = FileUtil.get_python_file_path(filename=settings.PYTHON_OUT_FILE)

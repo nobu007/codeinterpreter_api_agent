@@ -39,12 +39,10 @@ class CodeInterpreterPlanOutput(BaseModel):
 
 class CustomPydanticOutputParser(PydanticOutputParser):
     def parse(self, text) -> CodeInterpreterPlanList:
-        print("parse text=", text)
         input_data = self.preprocess_input(text)
         return super().parse(input_data)
 
     def preprocess_input(self, input_data) -> str:
-        print("preprocess_input input_data=", input_data)
         print("preprocess_input type input_data=", type(input_data))
         if isinstance(input_data, AIMessage):
             return input_data.content
@@ -71,7 +69,7 @@ class CodeInterpreterPlanner:
         else:
             prompt = create_planner_agent_prompt()
             prompt = PromptUpdater.update_prompt(prompt, ci_params)
-            PromptUpdater.show_prompt(prompt)
+            # PromptUpdater.show_prompt(prompt)
 
         # structured_llm
         # structured_llm = ci_params.llm.bind_tools(tools=[CodeInterpreterPlanList]) # なぜか空のAgentPlanが生成される
