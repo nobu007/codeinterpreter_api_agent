@@ -7,6 +7,8 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') $1" | tee -a "$LOG_FILE"
 }
 APP_START_PY="/app/server.py"
+cp -p .env /app/work/
+cd /app/work
 
 # /app/server.pyが起動しているかチェック
 if ! pgrep -f "python ${APP_START_PY}" >/dev/null; then
