@@ -5,7 +5,7 @@ from langchain_core.tools import StructuredTool
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import prepare_test_llm
-from codeinterpreterapi.schema import CodeInput
+from codeinterpreterapi.schema import FileInput
 from codeinterpreterapi.utils.file_util import FileUtil
 
 
@@ -27,13 +27,13 @@ class CodeChecker:
                 "Start from this latest code first.\n",
                 func=tools_instance._get_latest_code,
                 coroutine=tools_instance._aget_latest_code,
-                args_schema=CodeInput,  # type: ignore
+                args_schema=FileInput,  # type: ignore
             ),
         ]
 
         return tools
 
-    def _get__get_latest_code_common(self, filename=""):
+    def _get_latest_code_common(self, filename=""):
         target_dir = "./"
         target_filename = "main.py"
 
@@ -51,10 +51,10 @@ class CodeChecker:
             return ""
 
     def _get_latest_code(self, filename=""):
-        return self._get__get_latest_code_common(filename)
+        return self._get_latest_code_common(filename)
 
     async def _aget_latest_code(self, filename=""):
-        return self._get__get_latest_code_common(filename)
+        return self._get_latest_code_common(filename)
 
 
 def test():

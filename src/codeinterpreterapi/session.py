@@ -25,6 +25,7 @@ from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import CodeInterpreterLlm
 from codeinterpreterapi.schema import CodeInterpreterResponse, File, SessionStatus, UserRequest
+from codeinterpreterapi.utils.multi_converter import MultiConverter
 
 
 def _handle_deprecated_kwargs(kwargs: dict) -> None:
@@ -49,6 +50,7 @@ class AgentCallbackHandler(BaseCallbackHandler):
     def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> Any:
         """Run when chain ends running."""
         print("AgentCallbackHandler on_chain_end type(outputs)=", type(outputs))
+        print("AgentCallbackHandler on_chain_end type(outputs)=", outputs)
         self.agent_callback_func(outputs)
 
     def on_chat_model_start(
@@ -228,9 +230,10 @@ class CodeInterpreterSession:
 
     def _output_handler_pre(self, response: Any) -> str:
         print("_output_handler_pre response(type)=", type(response))
-        if isinstance(response, str):
-            output_str = response
-        elif isinstance(response, dict):
+        output_str = MultiConverter.to_str(response)
+
+        # TODO: MultiConverterに共通化
+        if isinstance(response, dict):
             output_str = ""
             code_log_item = {}
             if "output" in response:
@@ -242,8 +245,6 @@ class CodeInterpreterSession:
             if "log" in response:
                 code_log_item["log"] = str(response["log"])
             self.output_code_log = code_log_item
-        else:
-            output_str = "response=" + str(response)
         return output_str
 
     def _output_handler_post(self, final_response: str) -> CodeInterpreterResponse:

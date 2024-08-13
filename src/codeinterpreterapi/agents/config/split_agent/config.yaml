@@ -1,6 +1,6 @@
 agent_definition:
   agent_name: "code_split_agent"
-  agent_type: structured_chat
+  agent_type: tool_calling
   agent_role: |
     プログラムを分割する作業をお願いします。
     別のagentはプログラムの作成やテストの作成を実施することになります。

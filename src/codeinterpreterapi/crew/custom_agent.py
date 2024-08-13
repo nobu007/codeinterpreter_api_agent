@@ -4,6 +4,8 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from langchain_core.tools import BaseTool
 from pydantic import Field
 
+from codeinterpreterapi.utils.multi_converter import MultiConverter
+
 
 class CustomAgent(BaseAgent):
     agent_executor: Any = Field(default=None, description="Verbose mode for the Agent Execution")
@@ -28,7 +30,11 @@ class CustomAgent(BaseAgent):
         print("interpolate_inputs inputs=", inputs)
         super().interpolate_inputs(inputs)
 
-    def execute_task(self, task: Any, context: Optional[str] = None, tools: Optional[List[Any]] = None):
+    def execute_task(self, task: Any, context: Optional[str] = None, tools: Optional[List[Any]] = None) -> str:
+        # Notice: ValidationError  - 1 validation error for TaskOutput | raw: Input should be a valid string
+        # crewaiのTaskOutputのrawに入るのでstrで返す必要がある。
+        # TODO: 直接dictを返せるようにcrewaiを直す？
+
         # AgentExecutorを使用してタスクを実行
         # print("execute_task task=", task)
         print("execute_task context=", context)
@@ -38,9 +44,11 @@ class CustomAgent(BaseAgent):
         input_dict["question"] = task.prompt_context
         input_dict["message"] = "タスクを実行してください。\n" + task.expected_output
         result = self.agent_executor.invoke(input=input_dict)
-        print("execute_task result=", result)
+        result_str = MultiConverter.to_str(result)
+        print("execute_task result=", result_str)
+
         # TODO: return full dict when crewai is updated
-        return result["output"]
+        return result_str
 
     def create_agent_executor(self, tools=None) -> None:
         pass
