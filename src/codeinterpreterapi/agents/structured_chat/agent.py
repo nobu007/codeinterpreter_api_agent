@@ -170,9 +170,9 @@ def create_structured_chat_agent(
         | create_complement_input(prompt)
         | prompt
         | llm_with_stop
-        | output_parser
     )
     agent = assign_runnable_history(agent, runnable_config)
+    agent = agent | output_parser
     return agent
 
 

@@ -105,9 +105,9 @@ def create_tool_calling_agent(
         | create_complement_input(prompt)
         | prompt
         | llm_with_tools
-        | output_parser
     )
     agent = assign_runnable_history(agent, runnable_config)
+    agent = agent | output_parser
     return agent
 
 
