@@ -15,6 +15,7 @@ from codeinterpreterapi.planners.prompts import create_planner_agent_chat_prompt
 from codeinterpreterapi.schema import CodeInterpreterPlan, CodeInterpreterPlanList
 from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 from codeinterpreterapi.utils.prompt import PromptUpdater
+from codeinterpreterapi.utils.runnable_history import assign_runnable_history
 
 
 class Metadata(BaseModel):
@@ -88,7 +89,7 @@ class CodeInterpreterPlanner:
 
         # config
         if ci_params.runnable_config:
-            runnable = runnable.with_config(ci_params.runnable_config)
+            runnable = assign_runnable_history(runnable, ci_params.runnable_config)
 
         # agent
         agent = RunnableAgent(runnable=runnable, input_keys=list(prompt.input_variables))

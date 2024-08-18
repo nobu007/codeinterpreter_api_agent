@@ -82,7 +82,7 @@ class CodeInterpreterSupervisor:
         return self.supervisor_chain
 
     def invoke(self, input: Input) -> Output:
-        result = self.planner.invoke(input)
+        result = self.planner.invoke(input, config=self.ci_params.runnable_config)
         print("supervisor.invoke type(result)=", type(result))
         if isinstance(result, CodeInterpreterPlanList):
             plan_list: CodeInterpreterPlanList = result
