@@ -88,6 +88,7 @@ class File(BaseModel):
 
 
 class CodeInput(BaseModel):
+    filename: str
     code: str
 
 

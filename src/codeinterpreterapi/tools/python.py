@@ -1,4 +1,5 @@
 import base64
+import os
 import re
 import subprocess
 from io import BytesIO
@@ -12,6 +13,9 @@ from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.schema import CodeInput, File
 from codeinterpreterapi.utils.file_util import FileUtil
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+INVOKE_TASKS_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "../invoke_tasks"))
 
 
 class PythonTools:
@@ -46,14 +50,13 @@ class PythonTools:
 
         return tools
 
-    def _get_handler_local_command(self, code: str):
-        python_file_path = FileUtil.write_python_file(code)
-        command = f"cd src/codeinterpreterapi/invoke_tasks && invoke -c python run-code-file '{python_file_path}'"
+    def _get_handler_local_command(self, filename: str, code: str):
+        python_file_path = FileUtil.write_python_file(filename, code)
+        command = f"cd {INVOKE_TASKS_DIR} && invoke -c python run-code-file '{python_file_path}'"
         return command
 
-    def _run_handler_local(self, code: str):
-        print("_run_handler_local code=", code)
-        command = self._get_handler_local_command(code)
+    def _run_handler_local(self, filename: str, code: str):
+        command = self._get_handler_local_command(filename, code)
         try:
             output_content = subprocess.check_output(command, shell=True, universal_newlines=True)
             self.code_log.append((code, output_content))
@@ -62,9 +65,9 @@ class PythonTools:
             print(f"An error occurred: {e}")
             return None
 
-    async def _arun_handler_local(self, code: str):
+    async def _arun_handler_local(self, filename: str, code: str):
         print("_arun_handler_local code=", code)
-        command = self._get_handler_local_command(code)
+        command = self._get_handler_local_command(filename, code)
         try:
             output_content = await subprocess.check_output(command, shell=True, universal_newlines=True)
             self.code_log.append((code, output_content))
@@ -73,11 +76,11 @@ class PythonTools:
             print(f"An error occurred: {e}")
             return None
 
-    def _run_handler(self, code: str) -> str:
+    def _run_handler(self, filename: str, code: str) -> str:
         """Run code in container and send the output to the user"""
         self.show_code(code)
         if self.ci_params.codebox is None:
-            return self._run_handler_local(code)
+            return self._run_handler_local(filename, code)
         output: CodeBoxOutput = self.ci_params.codebox.run(code)
         self.code_log.append((code, output.content))
 
@@ -118,7 +121,7 @@ class PythonTools:
 
         return output.content
 
-    async def _arun_handler(self, code: str) -> str:
+    async def _arun_handler(self, filename: str, code: str) -> str:
         """Run code in container and send the output to the user"""
         await self.ashow_code(code)
         if self.ci_params.codebox is None:
@@ -179,7 +182,7 @@ def test():
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     tools_instance = PythonTools(ci_params=ci_params)
     test_code = "print('test output')"
-    result = tools_instance._run_handler(test_code)
+    result = tools_instance._run_handler("main.py", test_code)
     print("result=", result)
     assert "test output" in result
 

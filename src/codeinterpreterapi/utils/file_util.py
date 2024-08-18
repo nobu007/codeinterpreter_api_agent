@@ -16,17 +16,18 @@ class FileUtil:
         return python_file_path
 
     @staticmethod
-    def write_python_file(code: str):
+    def write_python_file(filename: str, code: str):
         if FileUtil.is_raw_string(code):
-            print("FileUtil write_python_file raw string by ast.parse()")
+            print("FileUtil write_python_file raw string by ast.parse() filename=", filename)
             parsed_code = ast.parse(code)
             code_content = ast.unparse(parsed_code)
         else:
-            print("FileUtil write_python_file regular string by ast.literal_eval()")
-            code_content = ast.literal_eval(f'"""{code}"""')
+            print("FileUtil write_python_file regular string by ast.literal_eval() filename=", filename)
+            code_content = code.replace('"""', '\\"\\"\\"')
+            code_content = ast.literal_eval(f'"""{code_content}"""')
 
-        if settings.PYTHON_OUT_FILE:
-            python_file_path = FileUtil.get_python_file_path(filename=settings.PYTHON_OUT_FILE)
+        if filename:
+            python_file_path = FileUtil.get_python_file_path(filename=filename)
             with open(python_file_path, "w", encoding="utf-8") as python_file:
                 python_file.write(code_content)
                 return python_file_path
