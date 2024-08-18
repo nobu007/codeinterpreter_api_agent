@@ -74,8 +74,10 @@ class CodeInterpreterCrew:
         if plan_list is None:
             return {}
         tasks = self.create_tasks(final_goal=inputs["input"], plan_list=plan_list)
+        crew_inputs = {"input": inputs.get("input", "")}
         my_crew = Crew(agents=self.agents, tasks=tasks)
-        result = my_crew.kickoff(inputs=inputs)
+        print("CodeInterpreterCrew.kickoff() crew_inputs=", crew_inputs)
+        result = my_crew.kickoff(inputs=crew_inputs)
         return result
 
 
