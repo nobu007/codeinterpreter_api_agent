@@ -403,11 +403,10 @@ class CodeInterpreterSession:
                     output = chunk["output"]
                 else:
                     output = str(chunk)
-                yield output
                 full_output += output
 
             print("generate_response_stream brain.stream full_output=", full_output)
-            self._aoutput_handler(full_output)
+            yield self._output_handler(full_output)
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
