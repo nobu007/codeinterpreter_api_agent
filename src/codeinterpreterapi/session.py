@@ -19,13 +19,14 @@ from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.brain.brain import CodeInterpreterBrain
 from codeinterpreterapi.brain.params import CodeInterpreterParams
-from codeinterpreterapi.callbacks.markdown.callbacks import MarkdownFileCallbackHandler
 from codeinterpreterapi.chains import aremove_download_link
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import CodeInterpreterLlm
 from codeinterpreterapi.schema import CodeInterpreterResponse, File, SessionStatus, UserRequest
 from codeinterpreterapi.utils.multi_converter import MultiConverter
+
+BaseMessageContent = Union[str, List[Union[str, Dict]]]
 
 
 def _handle_deprecated_kwargs(kwargs: dict) -> None:
@@ -105,7 +106,8 @@ class CodeInterpreterSession:
         configurable = {"session_id": init_session_id}  # TODO: set session_id
         runnable_config = RunnableConfig(
             configurable=configurable,
-            callbacks=[AgentCallbackHandler(self._output_handler), MarkdownFileCallbackHandler("langchain_log.md")],
+            callbacks=[],
+            # callbacks=[AgentCallbackHandler(self._output_handler), MarkdownFileCallbackHandler("langchain_log.md")],
         )
 
         # ci_params = {}
@@ -199,34 +201,61 @@ class CodeInterpreterSession:
             )
         )
 
-    def _input_handler(self, request: UserRequest) -> None:
-        """Callback function to handle user input."""
-        if not request.files:
-            return
-        if not request.content:
-            request.content = "I uploaded, just text me back and confirm that you got the file(s)."
-        assert isinstance(request.content, str), "TODO: implement image support"
-        request.content += "\n**The user uploaded the following files: **\n"
-        for file in request.files:
-            self.input_files.append(file)
-            request.content += f"[Attachment: {file.name}]\n"
-            self.ci_params.codebox.upload(file.name, file.content)
-        request.content += "**File(s) are now available in the cwd. **\n"
+    def _input_message_prepare(self, request: UserRequest) -> None:
+        # set return input_message
+        if isinstance(request.content, str):
+            input_message = {"input": request.content, "agent_scratchpad": ""}
+        else:
+            input_message = request.content
+        return input_message
 
-    async def _ainput_handler(self, request: UserRequest) -> None:
+    def _input_handler_common(self, request: UserRequest, add_content_str: str) -> None:
+        """Callback function to handle user input."""
         # TODO: variables as context to the agent
         # TODO: current files as context to the agent
         if not request.files:
-            return
+            return self._input_message_prepare(request)
         if not request.content:
-            request.content = "I uploaded, just text me back and confirm that you got the file(s)."
-        assert isinstance(request.content, str), "TODO: implement image support"
-        request.content += "\n**The user uploaded the following files: **\n"
+            add_content_str = "I uploaded, just text me back and confirm that you got the file(s).\n" + add_content_str
+        assert isinstance(request.content, BaseMessageContent)  # "TODO: implement image support"
+
+        # set request.content
+        if isinstance(request.content, str):
+            request.content += add_content_str
+        elif isinstance(request.content, list):
+            last_content = request.content[-1]
+            if isinstance(last_content, str):
+                last_content += add_content_str
+            else:
+                pass
+                # TODO impl it.
+                # last_content["input"] += add_content_str
+        else:
+            # Dict
+            pass
+            # TODO impl it.
+            # request.content["input"] += add_content_str
+        return self._input_message_prepare(request)
+
+    def _input_handler(self, request: UserRequest) -> None:
+        """Callback function to handle user input."""
+        add_content_str = "\n**The user uploaded the following files: **\n"
         for file in request.files:
             self.input_files.append(file)
-            request.content += f"[Attachment: {file.name}]\n"
+            add_content_str += f"[Attachment: {file.name}]\n"
+            self.ci_params.codebox.upload(file.name, file.content)
+        add_content_str += "**File(s) are now available in the cwd. **\n"
+        return self._input_handler_common(request, add_content_str)
+
+    async def _ainput_handler(self, request: UserRequest) -> None:
+        """Callback function to handle user input."""
+        add_content_str = "\n**The user uploaded the following files: **\n"
+        for file in request.files:
+            self.input_files.append(file)
+            add_content_str += f"[Attachment: {file.name}]\n"
             await self.ci_params.codebox.aupload(file.name, file.content)
-        request.content += "**File(s) are now available in the cwd. **\n"
+        add_content_str += "**File(s) are now available in the cwd. **\n"
+        return self._input_handler_common(request, add_content_str)
 
     def _output_handler_pre(self, response: Any) -> str:
         print("_output_handler_pre response(type)=", type(response))
@@ -304,7 +333,7 @@ class CodeInterpreterSession:
 
     def generate_response_sync(
         self,
-        user_msg: str,
+        user_msg: BaseMessageContent,
         files: list[File] = [],
     ) -> CodeInterpreterResponse:
         print("DEPRECATION WARNING: Use generate_response for sync generation.\n")
@@ -315,16 +344,16 @@ class CodeInterpreterSession:
 
     def generate_response(
         self,
-        user_msg: str,
-        files: list[File] = [],
+        user_msg: BaseMessageContent,
+        files: list[File] = None,
     ) -> CodeInterpreterResponse:
         """Generate a Code Interpreter response based on the user's input."""
+        if files is None:
+            files = []
         user_request = UserRequest(content=user_msg, files=files)
         try:
-            self._input_handler(user_request)
+            input_message = self._input_handler(user_request)
             print("generate_response type(user_request.content)=", type(user_request.content))
-            agent_scratchpad = ""
-            input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             response = self.brain.invoke(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
@@ -348,15 +377,15 @@ class CodeInterpreterSession:
 
     async def agenerate_response(
         self,
-        user_msg: str,
+        user_msg: BaseMessageContent,
         files: list[File] = None,
     ) -> CodeInterpreterResponse:
         """Generate a Code Interpreter response based on the user's input."""
         if files is None:
-            files = None
+            files = []
         user_request = UserRequest(content=user_msg, files=files)
         try:
-            await self._ainput_handler(user_request)
+            input_message = await self._ainput_handler(user_request)
             agent_scratchpad = ""
             input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
@@ -380,7 +409,7 @@ class CodeInterpreterSession:
 
     def generate_response_stream(
         self,
-        user_msg: str,
+        user_msg: BaseMessageContent,
         files: list[File] = None,
     ) -> Iterator[str]:
         """Generate a Code Interpreter response based on the user's input."""
@@ -388,10 +417,7 @@ class CodeInterpreterSession:
             files = []
         user_request = UserRequest(content=user_msg, files=files)
         try:
-            self._input_handler(user_request)
-            agent_scratchpad = ""
-            input_message = {"input": user_request.content, "agent_scratchpad": agent_scratchpad}
-            print("generate_response_stream type(user_request.content)=", user_request.content)
+            input_message = self._input_handler(user_request)
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             response_stream = self.brain.stream(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
@@ -417,7 +443,7 @@ class CodeInterpreterSession:
 
     async def agenerate_response_stream(
         self,
-        user_msg: str,
+        user_msg: BaseMessageContent,
         files: list[File] = None,
     ) -> AsyncGenerator[CodeInterpreterResponse, None]:
         """Generate a Code Interpreter response based on the user's input."""

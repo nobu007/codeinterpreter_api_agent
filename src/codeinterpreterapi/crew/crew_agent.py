@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from crewai import Agent, Crew, Task
 
@@ -69,15 +69,26 @@ class CodeInterpreterCrew:
         print("WARN: no task found plan.agent_name=", plan.agent_name)
         return None
 
-    def run(self, inputs: Dict, plan_list: CodeInterpreterPlanList):
+    def run(self, inputs: Union[Dict, List[Dict]], plan_list: CodeInterpreterPlanList):
         # update task description
         if plan_list is None:
             return {}
-        tasks = self.create_tasks(final_goal=inputs["input"], plan_list=plan_list)
-        crew_inputs = {"input": inputs.get("input", "")}
+
+        if isinstance(inputs, list):
+            last_input = inputs[-1]
+        else:
+            last_input = inputs
+        if "input" in inputs:
+            final_goal = last_input["input"]
+        elif "content" in inputs:
+            final_goal = last_input["content"]
+        else:
+            final_goal = "ユーザの指示に従って最終的な回答をしてください"
+
+        tasks = self.create_tasks(final_goal=final_goal, plan_list=plan_list)
         my_crew = Crew(agents=self.agents, tasks=tasks)
-        print("CodeInterpreterCrew.kickoff() crew_inputs=", crew_inputs)
-        result = my_crew.kickoff(inputs=crew_inputs)
+        print("CodeInterpreterCrew.kickoff() crew_inputs=", last_input)
+        result = my_crew.kickoff(inputs=last_input)
         return result
 
 

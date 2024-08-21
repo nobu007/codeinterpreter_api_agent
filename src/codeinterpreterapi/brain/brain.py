@@ -97,11 +97,16 @@ class CodeInterpreterBrain(Runnable):
                 del input['intermediate_steps']
 
         # set agent_results
-        input['agent_executor_result'] = self.agent_executor_result
-        input['plan_list'] = self.plan_list
-        input['supervisor_result'] = self.supervisor_result
-        input['thought_result'] = self.thought_result
-        input['crew_result'] = self.crew_result
+        if isinstance(input, list):
+            last_input = input[-1]
+        else:
+            last_input = input
+
+        last_input['agent_executor_result'] = self.agent_executor_result
+        last_input['plan_list'] = self.plan_list
+        last_input['supervisor_result'] = self.supervisor_result
+        last_input['thought_result'] = self.thought_result
+        last_input['crew_result'] = self.crew_result
         return input
 
     def run(self, input: Input, runnable_config: Optional[RunnableConfig] = None) -> Output:
