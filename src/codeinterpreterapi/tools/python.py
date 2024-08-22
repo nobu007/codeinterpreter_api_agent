@@ -31,17 +31,20 @@ class PythonTools:
         tools = [
             StructuredTool(
                 name="python",
-                description="Input a string of code to a ipython interpreter.\n"
-                "Write the entire code in a single string.\n"
-                "This string can be really long.\n"
-                "Do not start your code with a line break.\n"
-                "For example, do 'import numpy', not '\\nimport numpy'."
-                "Variables are preserved between runs. "
-                + (
-                    ("You can use all default python packages " f"specifically also these: {settings.CUSTOM_PACKAGES}")
-                    if settings.CUSTOM_PACKAGES
-                    else ""
-                ),  # TODO: or include this in the system message
+                description="IPythonインタプリタにコードを入力します。\n"
+                "コードは文字列として一つにまとめて入力してください。\n"
+                "この文字列は非常に長くても構いません。\n"
+                "コードは改行で始めないでください。\n"
+                "例えば、'import numpy'のように入力します。\n"
+                "'\\nimport numpy'のようにはしないでください。\n"
+                "また、必ず'filename'を指定してください。この値はファイル名として使用されます。\n"
+                "入力フォーマットは次の通りです:\n"
+                "{ 'filename': 'your_filename.py', 'code': 'your_code_here' }\n"
+                "変数は実行間で保持されます。\n"
+                "デフォルトのPythonパッケージに加えて、次のカスタムパッケージも使用できます: "
+                f"{settings.CUSTOM_PACKAGES}"
+                if settings.CUSTOM_PACKAGES
+                else "",
                 func=tools_instance._run_handler,
                 coroutine=tools_instance._arun_handler,
                 args_schema=CodeInput,  # type: ignore
