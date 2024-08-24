@@ -13,7 +13,7 @@ from codeinterpreterapi.config import settings
 from codeinterpreterapi.crew.crew_agent import CodeInterpreterCrew
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
-from codeinterpreterapi.schema import CodeInterpreterPlanList
+from codeinterpreterapi.schema import CodeInterpreterIntermediateResult, CodeInterpreterPlanList
 from codeinterpreterapi.supervisors.supervisors import CodeInterpreterSupervisor
 from codeinterpreterapi.thoughts.thoughts import CodeInterpreterToT
 from codeinterpreterapi.tools.tools import CodeInterpreterTools
@@ -40,12 +40,12 @@ class CodeInterpreterBrain(Runnable):
         self.llm_planner: Optional[Runnable] = None
         self.supervisor: Optional[AgentExecutor] = None
         self.thought: Optional[Runnable] = None
-        self.crew_agent: Optional[Runnable] = None
+        self.crew_agent: Optional[CodeInterpreterCrew] = None
 
         # agent_results
         self.agent_executor_result: Optional[str] = ""
         self.plan_list: Optional[CodeInterpreterPlanList] = None
-        self.supervisor_result: Optional[str] = ""
+        self.supervisor_result: Optional[CodeInterpreterIntermediateResult] = ""
         self.thought_result: Optional[str] = ""
         self.crew_result: Optional[str] = ""
 
@@ -96,49 +96,39 @@ class CodeInterpreterBrain(Runnable):
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
 
-        # set agent_results
-        if isinstance(input, list):
-            last_input = input[-1]
-        else:
-            last_input = input
-
-        last_input['agent_executor_result'] = self.agent_executor_result
-        last_input['plan_list'] = self.plan_list
-        last_input['supervisor_result'] = self.supervisor_result
-        last_input['thought_result'] = self.thought_result
-        last_input['crew_result'] = self.crew_result
         return input
 
-    def run(self, input: Input, runnable_config: Optional[RunnableConfig] = None) -> Output:
+    def run(self, input: Input, runnable_config: Optional[RunnableConfig] = None) -> CodeInterpreterIntermediateResult:
         self.update_next_agent()
         input = self.prepare_input(input)
         print("Brain run self.current_agent=", self.current_agent)
+        output = CodeInterpreterIntermediateResult(context="")
         try:
             ca = self.current_agent
             if ca == AgentName.AGENT_EXECUTOR:
-                output = self.agent_executor.invoke(input, config=runnable_config)
-                self.agent_executor_result = output
+                # TODO: set output
+                self.agent_executor_result = self.agent_executor.invoke(input, config=runnable_config)
             elif ca == AgentName.LLM_PLANNER:
-                output = self.llm_planner.invoke(input)
-                self.plan_list = output
+                # TODO: set output
+                self.plan_list = self.llm_planner.invoke(input)
             elif ca == AgentName.SUPERVISOR:
-                output = self.supervisor.invoke(input)
-                self.supervisor_result = output
+                self.supervisor_result = self.supervisor.invoke(input)
+                output = self.supervisor_result
             elif ca == AgentName.THOUGHT:
-                output = self.supervisor.invoke(input, config=runnable_config)
-                self.thought_result = output
+                # TODO: fix it and set output
+                self.thought_result = self.thought.invoke(input, config=runnable_config)
             else:
                 # ca == AgentName.CREW
-                output = self.crew_agent.run(input, self.plan_list)
-                self.crew_result = output
+                self.crew_result = self.crew_agent.run(input, self.plan_list)
+                output = self.crew_result
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
-            output = "Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
+            output.context = "Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
 
         self.update_agent_score()
         if isinstance(output, str):
-            output = {"output": output}
+            output = CodeInterpreterIntermediateResult(context=output)
         return output
 
     def __call__(self, input: Input) -> Output:

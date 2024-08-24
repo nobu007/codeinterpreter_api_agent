@@ -94,12 +94,12 @@ class CodeInterpreterSupervisor:
                 print("supervisor.invoke empty plan_list")
                 result_dict = self.supervisor_chain_no_agent.invoke(input)
                 result_str = MultiConverter.to_str(result_dict)
-                result = CodeInterpreterIntermediateResult(content=result_str)
+                result = CodeInterpreterIntermediateResult(context=result_str)
         else:
             print("supervisor.invoke no_agent no plan_list")
             result_dict = self.supervisor_chain_no_agent.invoke(input)
             result_str = MultiConverter.to_str(result_dict)
-            result = CodeInterpreterIntermediateResult(content=result_str)
+            result = CodeInterpreterIntermediateResult(context=result_str)
         return result
 
     # NOT USED
