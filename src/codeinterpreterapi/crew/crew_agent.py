@@ -1,6 +1,7 @@
 from typing import Dict, List, Union
 
 from crewai import Agent, Crew, Task
+from crewai.crews.crew_output import CrewOutput
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
@@ -9,7 +10,7 @@ from codeinterpreterapi.crew.custom_agent import (
 )
 from codeinterpreterapi.graphs.agent_wrapper_tool import AgentWrapperTool
 from codeinterpreterapi.llm.llm import prepare_test_llm
-from codeinterpreterapi.schema import CodeInterpreterPlan, CodeInterpreterPlanList
+from codeinterpreterapi.schema import CodeInterpreterIntermediateResult, CodeInterpreterPlan, CodeInterpreterPlanList
 from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 
 
@@ -69,7 +70,9 @@ class CodeInterpreterCrew:
         print("WARN: no task found plan.agent_name=", plan.agent_name)
         return None
 
-    def run(self, inputs: Union[Dict, List[Dict]], plan_list: CodeInterpreterPlanList):
+    def run(
+        self, inputs: Union[Dict, List[Dict]], plan_list: CodeInterpreterPlanList
+    ) -> CodeInterpreterIntermediateResult:
         # update task description
         if plan_list is None:
             return {}
@@ -88,7 +91,8 @@ class CodeInterpreterCrew:
         tasks = self.create_tasks(final_goal=final_goal, plan_list=plan_list)
         my_crew = Crew(agents=self.agents, tasks=tasks)
         print("CodeInterpreterCrew.kickoff() crew_inputs=", last_input)
-        result = my_crew.kickoff(inputs=last_input)
+        crew_result: CrewOutput = my_crew.kickoff(inputs=last_input)
+        result = CodeInterpreterIntermediateResult(context=crew_result.raw)
         return result
 
 

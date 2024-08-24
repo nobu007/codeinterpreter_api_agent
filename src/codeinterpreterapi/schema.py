@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from codeboxapi.schema import CodeBoxStatus
 from langchain_core.messages import AIMessage, HumanMessage
@@ -106,16 +106,33 @@ class UserRequest(HumanMessage):
         return f"UserRequest(content={self.content}, files={self.files})"
 
 
+class CodeInterpreterIntermediateResult(BaseModel):
+    thoughts: List[str] = Field(
+        default_factory=list,
+        description="エージェントの思考プロセスを表す文字列のリスト(最新の思考および根拠を理解するために必要な情報のみが入っている)",
+    )
+    context: str = Field(description="llmやagentからの回答本文")
+    code: str = Field(default="", description="プログラムのソースコード")
+    log: str = Field(default="", description="コードの実行結果やテスト結果などのlog")
+    language: str = Field(default="", description="llmやagentからの回答本文")
+    confidence: float = Field(default=0.95, description="現在の回答の信頼度[0.0～1.0], 1.0が最も信頼できる")
+    target_confidence: float = Field(default=0.95, description="目標とする信頼度")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="追加のメタデータを格納する辞書")
+    iteration_count: int = Field(default=0, description="現在の反復回数")
+    max_iterations: int = Field(default=10, description="最大反復回数")
+
+
 class CodeInterpreterResponse(AIMessage):
     """
     Response from the code interpreter agent.
-
-    files: list of files to be sent to the user (File )
-    code_log: list[tuple[str, str]] = []
     """
 
     files: Optional[list[File]] = []
-    code_log: Optional[dict[str, str]] = []
+    code: str = ""  # final code
+    log: str = ""  # final log
+    language: str = ""  # ex: python, java
+    start: bool = False
+    end: bool = False
     agent_name: Optional[str] = ""
     thought: Optional[str] = ""  # 中間的な思考
 

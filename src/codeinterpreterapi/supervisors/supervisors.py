@@ -6,16 +6,17 @@ from typing import Any, Dict
 from langchain.agents import AgentExecutor
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import Runnable
-from langchain_core.runnables.utils import Input, Output
+from langchain_core.runnables.utils import Input
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.crew.crew_agent import CodeInterpreterCrew
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
-from codeinterpreterapi.schema import CodeInterpreterPlanList
+from codeinterpreterapi.schema import CodeInterpreterIntermediateResult, CodeInterpreterPlanList
 from codeinterpreterapi.supervisors.prompts import create_supervisor_agent_prompt
 from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
+from codeinterpreterapi.utils.multi_converter import MultiConverter
 
 
 class CodeInterpreterSupervisor:
@@ -81,22 +82,27 @@ class CodeInterpreterSupervisor:
         # TODO: impl
         return self.supervisor_chain
 
-    def invoke(self, input: Input) -> Output:
-        result = self.planner.invoke(input, config=self.ci_params.runnable_config)
-        print("supervisor.invoke type(result)=", type(result))
-        if isinstance(result, CodeInterpreterPlanList):
-            plan_list: CodeInterpreterPlanList = result
+    def invoke(self, input: Input) -> CodeInterpreterIntermediateResult:
+        planner_result = self.planner.invoke(input, config=self.ci_params.runnable_config)
+        print("supervisor.invoke type(planner_result)=", type(planner_result))
+        if isinstance(planner_result, CodeInterpreterPlanList):
+            plan_list: CodeInterpreterPlanList = planner_result
             if len(plan_list.agent_task_list) > 0:
                 print("supervisor.invoke use crew_agent plan_list=", plan_list)
-                result = self.ci_params.crew_agent.run(input, result)
+                result: CodeInterpreterIntermediateResult = self.ci_params.crew_agent.run(input, plan_list)
             else:
-                print("supervisor.invoke no_agent plan_list=", plan_list)
-                result = self.supervisor_chain_no_agent.invoke(input)
+                print("supervisor.invoke empty plan_list")
+                result_dict = self.supervisor_chain_no_agent.invoke(input)
+                result_str = MultiConverter.to_str(result_dict)
+                result = CodeInterpreterIntermediateResult(content=result_str)
         else:
             print("supervisor.invoke no_agent no plan_list")
-            result = self.supervisor_chain_no_agent.invoke(input)
+            result_dict = self.supervisor_chain_no_agent.invoke(input)
+            result_str = MultiConverter.to_str(result_dict)
+            result = CodeInterpreterIntermediateResult(content=result_str)
         return result
 
+    # NOT USED
     def execute_plan(self, plan_list: CodeInterpreterPlanList) -> Dict[str, Any]:
         print("supervisor.execute_plan type(plan_list)=", type(plan_list))
         # AgentExecutorの初期化
@@ -115,7 +121,7 @@ class CodeInterpreterSupervisor:
 
             try:
                 # タスクを実行
-                result = agent.run(
+                result: CodeInterpreterIntermediateResult = agent.run(
                     f"Task: {plan.task_description}\n"
                     f"Expected output: {plan.expected_output}\n"
                     "Please complete this task."

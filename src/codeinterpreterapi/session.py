@@ -131,7 +131,7 @@ class CodeInterpreterSession:
 
         self.input_files: list[File] = []
         self.output_files: list[File] = []
-        self.output_code_log: list[tuple[str, str]] = []
+        self.output_code_log_list: list[tuple[str, str]] = []
 
     @classmethod
     def from_id(cls, session_id: UUID, **kwargs: Any) -> "CodeInterpreterSession":
@@ -273,7 +273,7 @@ class CodeInterpreterSession:
                 code_log_item["tool_input"] = str(response["tool_input"])
             if "log" in response:
                 code_log_item["log"] = str(response["log"])
-            self.output_code_log = code_log_item
+            self.output_code_log_list = code_log_item
         return output_str
 
     def _output_handler_post(self, final_response: str) -> CodeInterpreterResponse:
@@ -292,13 +292,23 @@ class CodeInterpreterSession:
         #             print("Error while removing download links:", e)
 
         output_files = self.output_files
-        code_log = self.output_code_log
+        code_log = self.output_code_log_list
+        final_code = ""
+        final_log = ""
+        if len(final_code) > 0:
+            final_code = code_log[-1][0]
+            final_log = code_log[-1][0]
         self.output_files = []
-        self.output_code_log = []
+        self.output_code_log_list = []
 
         print("_output_handler self.brain.current_agent=", self.brain.current_agent)
         response = CodeInterpreterResponse(
-            content=final_response, files=output_files, code_log=code_log, agent_name=self.brain.current_agent
+            content=final_response,
+            files=output_files,
+            code_log=code_log,
+            agent_name=self.brain.current_agent,
+            code=final_code,
+            log=final_log,
         )
         return response
 
@@ -324,9 +334,9 @@ class CodeInterpreterSession:
                     print("Error while removing download links:", e)
 
         output_files = self.output_files
-        code_log = self.output_code_log
+        code_log = self.output_code_log_list
         self.output_files = []
-        self.output_code_log = []
+        self.output_code_log_list = []
 
         response = CodeInterpreterResponse(content=final_response, files=output_files, code_log=code_log)
         return response
