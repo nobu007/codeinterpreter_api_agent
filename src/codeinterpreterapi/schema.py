@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from codeboxapi.schema import CodeBoxStatus
 from langchain_core.messages import AIMessage, HumanMessage
@@ -88,12 +88,16 @@ class File(BaseModel):
 
 
 class CodeInput(BaseModel):
-    filename: str
     code: str
 
 
 class FileInput(BaseModel):
     filename: str
+
+
+class CodeAndFileInput(BaseModel):
+    filename: str
+    code: str
 
 
 class UserRequest(HumanMessage):
@@ -104,6 +108,9 @@ class UserRequest(HumanMessage):
 
     def __repr__(self) -> str:
         return f"UserRequest(content={self.content}, files={self.files})"
+
+
+CodeInterpreterIntermediateRequest = Union[str, List[Union[str, Dict]]]
 
 
 class CodeInterpreterIntermediateResult(BaseModel):

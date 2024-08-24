@@ -22,9 +22,9 @@ class CodeChecker:
         tools = [
             StructuredTool(
                 name="code_checker",
-                description="This tool provide the latest code you make.\n"
-                "Please call this tool when you start coding.\n"
-                "Start from this latest code first.\n",
+                description="""このツールは作業中の最新コードを取得します。"
+                作業を開始するときは最初に最新コードを確認してください。
+                ただし、ユーザがコード全体を指定した場合は、ユーザが指定したコードを優先してください。""",
                 func=tools_instance._get_latest_code,
                 coroutine=tools_instance._aget_latest_code,
                 args_schema=FileInput,  # type: ignore

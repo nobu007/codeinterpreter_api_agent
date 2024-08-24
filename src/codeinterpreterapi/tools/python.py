@@ -1,6 +1,7 @@
 import base64
 import os
 import re
+import shlex
 import subprocess
 from io import BytesIO
 from uuid import uuid4
@@ -11,7 +12,7 @@ from langchain_core.tools import StructuredTool
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import prepare_test_llm
-from codeinterpreterapi.schema import CodeInput, File
+from codeinterpreterapi.schema import CodeAndFileInput, File, FileInput
 from codeinterpreterapi.utils.file_util import FileUtil
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +31,7 @@ class PythonTools:
         tools_instance = cls(ci_params=ci_params)
         tools = [
             StructuredTool(
-                name="python",
+                name="python_by_code",
                 description="IPythonインタプリタにコードを入力します。\n"
                 "コードは文字列として一つにまとめて入力してください。\n"
                 "この文字列は非常に長くても構いません。\n"
@@ -38,52 +39,90 @@ class PythonTools:
                 "例えば、'import numpy'のように入力します。\n"
                 "'\\nimport numpy'のようにはしないでください。\n"
                 "また、必ず'filename'を指定してください。この値はファイル名として使用されます。\n"
-                "入力フォーマットは次の通りです:\n"
-                "{ 'filename': 'your_filename.py', 'code': 'your_code_here' }\n"
                 "変数は実行間で保持されます。\n"
                 "デフォルトのPythonパッケージに加えて、次のカスタムパッケージも使用できます: "
                 f"{settings.CUSTOM_PACKAGES}"
                 if settings.CUSTOM_PACKAGES
                 else "",
-                func=tools_instance._run_handler,
-                coroutine=tools_instance._arun_handler,
-                args_schema=CodeInput,  # type: ignore
+                func=tools_instance.run_by_code,
+                coroutine=tools_instance.arun_by_code,
+                args_schema=CodeAndFileInput,  # type: ignore
+            ),
+            StructuredTool(
+                name="python_by_file",
+                description="IPythonインタプリタにpyファイルを入力します。\n"
+                "ファイルはカレントディレクトリからの相対パスか絶対パスを指定してください。\n"
+                "デフォルトのPythonパッケージに加えて、次のカスタムパッケージも使用できます: "
+                f"{settings.CUSTOM_PACKAGES}"
+                if settings.CUSTOM_PACKAGES
+                else "",
+                func=tools_instance.run_by_file,
+                coroutine=tools_instance.arun_by_file,
+                args_schema=FileInput,  # type: ignore
             ),
         ]
 
         return tools
 
-    def _get_handler_local_command(self, filename: str, code: str):
-        python_file_path = FileUtil.write_python_file(filename, code)
-        command = f"cd {INVOKE_TASKS_DIR} && invoke -c python run-code-file '{python_file_path}'"
+    def run_by_file(self, filename: str) -> str:
+        return self._run_local(filename)
+
+    def run_by_code(self, filename: str, code: str) -> str:
+        return self._run_local(filename, code)
+
+    async def arun_by_file(self, filename: str) -> str:
+        return self._arun_local(filename)
+
+    async def arun_by_code(self, filename: str, code: str) -> str:
+        return self._arun_local(filename, code)
+
+    def _get_command_local(self, filename: str, code: str = "") -> str:
+        python_file_path = FileUtil.get_python_file_path(filename=filename)
+        if code:
+            python_file_path = FileUtil.write_python_file(filename, code)
+        command = f"invoke -c python run-code-file '{python_file_path}'"
         return command
 
-    def _run_handler_local(self, filename: str, code: str):
-        command = self._get_handler_local_command(filename, code)
+    def _run_local(self, filename: str, code: str = ""):
+        command = self._get_command_local(filename, code)
         try:
-            output_content = subprocess.check_output(command, shell=True, universal_newlines=True)
+            # シェルインジェクションを防ぐためにshlexを使用
+            args = shlex.split(command)
+            output_content = subprocess.check_output(
+                args, stderr=subprocess.STDOUT, universal_newlines=True, cwd=INVOKE_TASKS_DIR
+            )
+            print("_run_local output_content=", type(output_content))
+            print("_run_local output_content=", output_content)
             self.code_log.append((code, output_content))
             return output_content
         except subprocess.CalledProcessError as e:
-            print(f"An error occurred: {e}")
-            return None
+            error_message = f"An error occurred: {e}\nOutput: {e.output}"
+            print(error_message)
+            self.code_log.append((code, error_message))
+            return error_message
 
-    async def _arun_handler_local(self, filename: str, code: str):
-        print("_arun_handler_local code=", code)
-        command = self._get_handler_local_command(filename, code)
+    async def _arun_local(self, filename: str, code: str = "") -> str:
+        print(f"_arun_handler_local filename={filename}, code={code}")
+        command = self._get_command_local(filename, code)
         try:
-            output_content = await subprocess.check_output(command, shell=True, universal_newlines=True)
+            # シェルインジェクションを防ぐためにshlexを使用
+            args = shlex.split(command)
+            output_content = await subprocess.check_output(
+                args, stderr=subprocess.STDOUT, universal_newlines=True, cwd=INVOKE_TASKS_DIR
+            )
+            print("_arun_local output_content=", output_content)
             self.code_log.append((code, output_content))
             return output_content
         except subprocess.CalledProcessError as e:
-            print(f"An error occurred: {e}")
-            return None
+            error_message = f"An error occurred: {e}\nOutput: {e.output}"
+            print(error_message)
+            self.code_log.append((code, error_message))
+            return error_message
 
     def _run_handler(self, filename: str, code: str) -> str:
         """Run code in container and send the output to the user"""
-        self.show_code(code)
         if self.ci_params.codebox is None:
-            return self._run_handler_local(filename, code)
+            return self._run_local(filename, code)
         output: CodeBoxOutput = self.ci_params.codebox.run(code)
         self.code_log.append((code, output.content))
 
@@ -124,11 +163,11 @@ class PythonTools:
 
         return output.content
 
-    async def _arun_handler(self, filename: str, code: str) -> str:
+    async def _arun(self, filename: str, code: str) -> str:
         """Run code in container and send the output to the user"""
         await self.ashow_code(code)
         if self.ci_params.codebox is None:
-            return self._arun_handler_local(code)
+            return self._arun_local(code)
         output: CodeBoxOutput = await self.ci_params.codebox.arun(code)
         self.code_log.append((code, output.content))
 
@@ -185,7 +224,8 @@ def test():
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     tools_instance = PythonTools(ci_params=ci_params)
     test_code = "print('test output')"
-    result = tools_instance._run_handler("main.py", test_code)
+    result = tools_instance.run_by_code("main.py", test_code)
+    result = tools_instance.run_by_file("main.py")
     print("result=", result)
     assert "test output" in result
 
