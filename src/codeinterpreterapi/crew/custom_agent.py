@@ -27,7 +27,6 @@ class CustomAgent(BaseAgent):
 
     def interpolate_inputs(self, inputs: Dict[str, Any]) -> None:
         """Interpolate inputs into the task description and expected output."""
-        print("interpolate_inputs inputs=", inputs)
         super().interpolate_inputs(inputs)
 
     def execute_task(self, task: Any, context: Optional[str] = None, tools: Optional[List[Any]] = None) -> str:
@@ -45,6 +44,7 @@ class CustomAgent(BaseAgent):
         input_dict["message"] = "タスクを実行してください。\n" + task.expected_output
         result = self.agent_executor.invoke(input=input_dict)
         result_str = MultiConverter.to_str(result)
+        print("execute_task result(type)=", type(result_str))
         print("execute_task result=", result_str)
 
         # TODO: return full dict when crewai is updated

@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 
+from crewai.crews.crew_output import CrewOutput, TaskOutput
 from langchain_core.messages import AIMessageChunk
 
 
@@ -14,13 +15,16 @@ class MultiConverter:
             if len(input_obj) > 0:
                 input_obj = MultiConverter._process_dict(input_obj[-1])
             else:
-                input_obj = ""
+                return "no output"
         elif isinstance(input_obj, Dict):
             input_obj = MultiConverter._process_dict(input_obj)
+        elif isinstance(input_obj, CrewOutput):
+            input_obj = MultiConverter._process_crew_output(input_obj)
         else:
+            print("MultiConverter to_str type(input_obj)=", type(input_obj))
             return str(input_obj)
 
-        # 再帰
+        # 確実にstr以外は念のため再帰
         return MultiConverter.to_str(input_obj)
 
     @staticmethod
@@ -43,3 +47,14 @@ class MultiConverter:
         keys = ["tool", "tool_input_obj", "log"]
         code_log_item = {key: str(input_dict[key]) for key in keys if key in input_dict}
         return str(code_log_item) if code_log_item else str(input_dict)
+
+    @staticmethod
+    def _process_crew_output(input_crew_output: CrewOutput) -> str:
+        # TODO: return json or
+        last_task_output: TaskOutput = input_crew_output.tasks_output[-1]
+        if last_task_output.json_dict:
+            return str(last_task_output.json_dict)
+        elif last_task_output.pydantic:
+            return str(last_task_output.pydantic)
+        else:
+            return last_task_output.raw

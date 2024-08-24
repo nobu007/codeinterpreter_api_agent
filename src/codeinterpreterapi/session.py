@@ -411,7 +411,7 @@ class CodeInterpreterSession:
         self,
         user_msg: BaseMessageContent,
         files: list[File] = None,
-    ) -> Iterator[str]:
+    ) -> Iterator[CodeInterpreterResponse]:
         """Generate a Code Interpreter response based on the user's input."""
         if files is None:
             files = []

@@ -116,7 +116,8 @@ class CodeInterpreterResponse(AIMessage):
 
     files: Optional[list[File]] = []
     code_log: Optional[dict[str, str]] = []
-    agent_name: str = ""
+    agent_name: Optional[str] = ""
+    thought: Optional[str] = ""  # 中間的な思考
 
     def show(self) -> None:
         print("AI: ", self.content)
