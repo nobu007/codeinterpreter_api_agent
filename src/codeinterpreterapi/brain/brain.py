@@ -3,6 +3,7 @@ import traceback
 from typing import Any, Dict, List, Optional, Union
 
 from gui_agent_loop_core.schema.core.schema import AgentName
+from gui_agent_loop_core.schema.message.schema import BaseMessageContent
 from langchain.agents import AgentExecutor
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.runnables.utils import Input, Output
@@ -77,34 +78,43 @@ class CodeInterpreterBrain(Runnable):
         self.crew_agent = CodeInterpreterCrew(ci_params=self.ci_params)
         self.ci_params.crew_agent = self.crew_agent
 
-    def prepare_input(self, input: Input):
+    def prepare_input(self, input_dict: Dict):
         ca = self.current_agent
         if ca == AgentName.AGENT_EXECUTOR:
-            if "intermediate_steps" in input:
-                del input['intermediate_steps']
+            if "intermediate_steps" in input_dict:
+                del input_dict['intermediate_steps']
         elif ca == AgentName.LLM_PLANNER:
-            if "intermediate_steps" in input:
-                del input['intermediate_steps']
+            if "intermediate_steps" in input_dict:
+                del input_dict['intermediate_steps']
         elif ca == AgentName.SUPERVISOR:
-            if "intermediate_steps" in input:
-                del input['intermediate_steps']
-            if "agent_scratchpad" not in input:
-                input['agent_scratchpad'] = ""
-            if "messages" not in input:
-                input['messages'] = []
+            if "intermediate_steps" in input_dict:
+                del input_dict['intermediate_steps']
+            if "agent_scratchpad" not in input_dict:
+                input_dict['agent_scratchpad'] = ""
+            if "messages" not in input_dict:
+                input_dict['messages'] = []
         elif ca == AgentName.THOUGHT:
-            if "intermediate_steps" in input:
-                del input['intermediate_steps']
+            if "intermediate_steps" in input_dict:
+                del input_dict['intermediate_steps']
         else:
             # ca == AgentName.CREW
-            if "intermediate_steps" in input:
-                del input['intermediate_steps']
+            if "intermediate_steps" in input_dict:
+                del input_dict['intermediate_steps']
 
-        return input
+        return input_dict
 
-    def run(self, input: Input, runnable_config: Optional[RunnableConfig] = None) -> CodeInterpreterIntermediateResult:
+    def run(
+        self, input: BaseMessageContent, runnable_config: Optional[RunnableConfig] = None
+    ) -> CodeInterpreterIntermediateResult:
         self.update_next_agent()
-        input = self.prepare_input(input)
+        last_input = input
+        if isinstance(input, list):
+            last_input = input[-1]
+            if isinstance(last_input, Dict):
+                input[-1] = self.prepare_input(last_input)
+        else:
+            if isinstance(last_input, Dict):
+                input = self.prepare_input(last_input)
         print("Brain run self.current_agent=", self.current_agent)
         print("Brain run input=", input)
         try:

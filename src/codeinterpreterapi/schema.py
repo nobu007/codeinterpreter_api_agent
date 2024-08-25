@@ -114,7 +114,7 @@ class UserRequest(HumanMessage):
         return f"UserRequest(content={self.content}, files={self.files})"
 
 
-CodeInterpreterIntermediateRequest = Union[str, List[Union[str, Dict]]]
+CodeInterpreterRequest = Union[str, List[Union[str, Dict]]]
 
 
 class CodeInterpreterIntermediateResult(BaseModel):
