@@ -5,6 +5,7 @@ from google.ai.generativelanguage_v1beta.types import GenerateContentRequest
 from google.generativeai.types import Tool as GoogleTool  # type: ignore[import]
 from google.generativeai.types.content_types import FunctionDeclarationType  # type: ignore[import]
 from google.generativeai.types.content_types import ToolDict  # type: ignore[import]
+from google.generativeai.types.safety_types import HarmBlockThreshold, HarmCategory
 from langchain.chat_models.base import BaseChatModel
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import Runnable, RunnableConfig
@@ -81,12 +82,20 @@ class CodeInterpreterLlm:
         if settings.GEMINI_API_KEY and "gemini" in model:
             if "gemini" not in model:
                 print("Please set the gemini model in the settings.")
+            # https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/configure-safety-attributes
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            }
             return ChatGoogleGenerativeAIWrapper(
                 model=model,
                 temperature=settings.TEMPERATURE,
                 google_api_key=settings.GEMINI_API_KEY,
                 max_output_tokens=max_output_tokens,
                 max_retries=max_retries,
+                safety_settings=safety_settings,
             )
         if settings.ANTHROPIC_API_KEY and "claude" in model:
             from langchain_anthropic import ChatAnthropic  # type: ignore
