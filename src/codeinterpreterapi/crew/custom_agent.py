@@ -54,14 +54,19 @@ class CustomAgent(BaseAgent):
     def create_input_dict(self, task: CrewTask) -> None:
         # This is interface crewai <=> langchain
         # Tools will be set by langchain layer.
+        print("task=", task)
         task_description = task.description
         if task.context:
-            task_description += f"### コンテキスト\n{task.context}"
+            task_description += f"\n\n### コンテキスト\n{task.context}"
         if task.expected_output:
-            task_description += f"### 出力形式\n{task.expected_output}"
-        if task.context:
-            task_description += f"### human_input\n{task.human_input}"
+            task_description += f"\n\n### 出力形式\n{task.expected_output}"
 
+        additional_keys = ["human_input", "goal", "backstory"]
+
+        for key in additional_keys:
+            if hasattr(task, key):
+                value = getattr(task, key)
+                task_description += f"\n\n### {key}\n{value}"
         input_dict = {}
         input_dict["task_description"] = task_description
         return input_dict

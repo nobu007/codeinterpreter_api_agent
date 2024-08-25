@@ -17,7 +17,7 @@ def load_tool_calling_agent_executor(
     Load an agent executor(general purpose).
     """
     prompt = create_tool_calling_agent_prompt(ci_params.is_ja)
-    if agent_def and agent_def.message_prompt_template is not None:
+    if agent_def:
         prompt = prompt.partial(agent_role=agent_def.agent_role)
     if ci_params.verbose_prompt:
         input_variables = prompt.input_variables
