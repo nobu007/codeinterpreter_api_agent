@@ -1,14 +1,14 @@
-from typing import Dict, List, Union
+from typing import List
 
 from crewai import Agent, Crew, Task
 from crewai.crews.crew_output import CrewOutput
+from gui_agent_loop_core.schema.message.schema import BaseMessageContent
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.crew.custom_agent import (
     CustomAgent,  # You need to build and extend your own agent logic with the CrewAI BaseAgent class then import it here.
 )
-from codeinterpreterapi.graphs.agent_wrapper_tool import AgentWrapperTool
 from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.schema import CodeInterpreterIntermediateResult, CodeInterpreterPlan, CodeInterpreterPlanList
 from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
@@ -16,29 +16,31 @@ from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 
 class CodeInterpreterCrew:
     def __init__(self, ci_params: CodeInterpreterParams):
-        self.name_agent_dict = self.create_agents(ci_params)
         self.ci_params = ci_params
+        self.name_agent_dict = self.create_agents()
         self.agents = list(self.name_agent_dict.values())
 
-    def create_agents(self, ci_params: CodeInterpreterParams) -> List[Agent]:
+    def create_agents(self) -> List[Agent]:
         name_agent_dict = {}
-        tools = AgentWrapperTool.create_agent_wrapper_tools(ci_params)
-        for agent_def in ci_params.agent_def_list:
+        # tools = AgentWrapperTool.create_agent_wrapper_tools(self.ci_params)
+        for agent_def in self.ci_params.agent_def_list:
             agent_executor = agent_def.agent_executor
             role = agent_def.agent_name
             goal = "clear information provide for user about " + agent_def.agent_name
             backstory = agent_def.agent_role
             is_use_custom = True
             if is_use_custom:
-                agent = CustomAgent(agent_executor=agent_executor, role=role, goal=goal, backstory=backstory)
+                agent = CustomAgent(
+                    agent_executor=agent_executor, ci_params=self.ci_params, role=role, goal=goal, backstory=backstory
+                )
             else:
                 # TODO: fix it. it is not working now.
                 agent = Agent(
                     role=role,
                     goal=goal,
                     backstory=backstory,
-                    tools=[tools[0]],
-                    llm=ci_params.llm_fast,
+                    # tools=[tools[0]],
+                    llm=self.ci_params.llm,
                 )
 
             name_agent_dict[agent_def.agent_name] = agent
@@ -70,9 +72,7 @@ class CodeInterpreterCrew:
         print("WARN: no task found plan.agent_name=", plan.agent_name)
         return None
 
-    def run(
-        self, inputs: Union[Dict, List[Dict]], plan_list: CodeInterpreterPlanList
-    ) -> CodeInterpreterIntermediateResult:
+    def run(self, inputs: BaseMessageContent, plan_list: CodeInterpreterPlanList) -> CodeInterpreterIntermediateResult:
         # update task description
         if plan_list is None:
             return {}
