@@ -2,6 +2,7 @@ from langchain_community.tools.shell.tool import BaseTool, ShellTool
 from langchain_community.tools.tavily_search import TavilySearchResults
 
 from codeinterpreterapi.brain.params import CodeInterpreterParams
+from codeinterpreterapi.tools.bash import BashTools
 from codeinterpreterapi.tools.code_checker import CodeChecker
 from codeinterpreterapi.tools.python import PythonTools
 
@@ -22,11 +23,18 @@ class CodeInterpreterTools:
         return self._additional_tools
 
     def add_tools_shell(self) -> None:
-        shell_tool = ShellTool()
-        shell_tool.description = shell_tool.description + f"args {shell_tool.args}".replace("{", "{{").replace(
-            "}", "}}"
-        )
-        tools = [shell_tool]
+        use_langchain_shell_tool = False
+        if use_langchain_shell_tool:
+            # NOT WORKING
+            # google.api_core.exceptions.InvalidArgument: 400 * GenerateContentRequest.tools[0].function_declarations[3].parameters.properties[commands].type: must be specified
+            # * GenerateContentRequest.tools[0].function_declarations[8].parameters.properties[commands].type: must be specified
+            shell_tool = ShellTool()
+            shell_tool.description = shell_tool.description + f"args {shell_tool.args}".replace("{", "{{").replace(
+                "}", "}}"
+            )
+            tools = [shell_tool]
+        else:
+            tools = BashTools.get_tools_bash(self._ci_params)
         self._additional_tools += tools
 
     def add_tools_web_search(self) -> None:

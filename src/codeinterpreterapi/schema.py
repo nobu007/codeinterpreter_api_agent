@@ -100,6 +100,10 @@ class CodeAndFileInput(BaseModel):
     code: str
 
 
+class BashCommand(BaseModel):
+    command: str
+
+
 class UserRequest(HumanMessage):
     files: list[File] = []
 
