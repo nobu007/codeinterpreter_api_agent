@@ -133,8 +133,8 @@ class CodeInterpreterBrain(Runnable):
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
-            output = CodeInterpreterIntermediateResult()
-            output.context = "Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
+            context = "Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
+            output = CodeInterpreterIntermediateResult(context=context)
 
         self.update_agent_score()
         if isinstance(output, str):

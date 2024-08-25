@@ -6,6 +6,7 @@ from uuid import UUID
 
 from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxStatus  # type: ignore
+from gui_agent_loop_core.schema.message.schema import BaseMessageContent
 from langchain.callbacks.base import BaseCallbackHandler, Callbacks
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 from langchain_community.chat_message_histories.postgres import PostgresChatMessageHistory
@@ -19,14 +20,13 @@ from langchain_core.tools import BaseTool
 
 from codeinterpreterapi.brain.brain import CodeInterpreterBrain
 from codeinterpreterapi.brain.params import CodeInterpreterParams
+from codeinterpreterapi.callbacks.markdown.callbacks import MarkdownFileCallbackHandler
 from codeinterpreterapi.chains import aremove_download_link
 from codeinterpreterapi.chat_history import CodeBoxChatMessageHistory
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import CodeInterpreterLlm
 from codeinterpreterapi.schema import CodeInterpreterResponse, File, SessionStatus, UserRequest
 from codeinterpreterapi.utils.multi_converter import MultiConverter
-
-BaseMessageContent = Union[str, List[Union[str, Dict]]]
 
 
 def _handle_deprecated_kwargs(kwargs: dict) -> None:
@@ -106,8 +106,8 @@ class CodeInterpreterSession:
         configurable = {"session_id": init_session_id}  # TODO: set session_id
         runnable_config = RunnableConfig(
             configurable=configurable,
-            callbacks=[],
-            # callbacks=[AgentCallbackHandler(self._output_handler), MarkdownFileCallbackHandler("langchain_log.md")],
+            # callbacks=[],
+            callbacks=[AgentCallbackHandler(self._output_handler), MarkdownFileCallbackHandler("langchain_log.md")],
         )
 
         # ci_params = {}
@@ -209,7 +209,7 @@ class CodeInterpreterSession:
             input_message = request.content
         return input_message
 
-    def _input_handler_common(self, request: UserRequest, add_content_str: str) -> None:
+    def _input_handler_common(self, request: BaseMessageContent, add_content_str: str) -> None:
         """Callback function to handle user input."""
         # TODO: variables as context to the agent
         # TODO: current files as context to the agent

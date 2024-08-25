@@ -153,7 +153,8 @@ def test():
     ci_params.crew_agent = crew_agent
     planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
     supervisor = CodeInterpreterSupervisor(planner=planner, ci_params=ci_params)
-    result = supervisor.invoke({"input": test_prompt, "agent_scratchpad": "", "messages": [test_prompt]})
+    input_dict = {"input": test_prompt}
+    result = supervisor.invoke(input=input_dict)
     print("result=", result)
 
 
