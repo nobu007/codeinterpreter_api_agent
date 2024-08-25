@@ -3,6 +3,7 @@ from typing import Sequence
 from langchain.agents.agent import AgentOutputParser
 from langchain.agents.format_scratchpad.tools import format_to_tool_messages
 from langchain.agents.output_parsers.tools import ToolsAgentOutputParser
+from langchain.tools.render import render_text_description_and_args
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.prompts.chat import ChatPromptTemplate
 from langchain_core.runnables import Runnable, RunnableConfig, RunnablePassthrough
@@ -11,6 +12,7 @@ from langchain_core.tools import BaseTool
 from codeinterpreterapi.agents.tool_calling.prompts import create_tool_calling_agent_prompt
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
+from codeinterpreterapi.schema import ToolsRenderer
 from codeinterpreterapi.utils.runnable import create_complement_input
 from codeinterpreterapi.utils.runnable_history import assign_runnable_history
 
@@ -19,13 +21,14 @@ def create_tool_calling_agent_wrapper(
     ci_params: CodeInterpreterParams,
     prompt: ChatPromptTemplate,
 ) -> Runnable:
-    return create_tool_calling_agent(llm=ci_params.llm_tools, tools=ci_params.tools, prompt=prompt)
+    return create_tool_calling_agent(llm=ci_params.llm, tools=ci_params.tools, prompt=prompt)
 
 
 def create_tool_calling_agent(
     llm: BaseLanguageModel,
     tools: Sequence[BaseTool],
     prompt: ChatPromptTemplate,
+    tools_renderer: ToolsRenderer = render_text_description_and_args,
     output_parser: AgentOutputParser = ToolsAgentOutputParser(),
     runnable_config: RunnableConfig = RunnableConfig(callbacks=None, tags=[], metadata={}),
 ) -> Runnable:
@@ -36,6 +39,8 @@ def create_tool_calling_agent(
         tools: Tools this agent has access to.
         prompt: The prompt to use. See Prompt section below for more on the expected
             input variables.
+        tools_renderer: This controls how the tools are converted into a string and
+            then passed into the LLM. Default is `render_text_description`.
 
     Returns:
         A Runnable sequence representing an agent. It takes as input all the same input
@@ -90,10 +95,16 @@ def create_tool_calling_agent(
             ``MessagesPlaceholder``. Intermediate agent actions and tool output
             messages will be passed in here.
     """
-    missing_vars = {"agent_scratchpad"}.difference(prompt.input_variables + list(prompt.partial_variables))
+    missing_vars = {"tools", "tool_names", "agent_scratchpad"}.difference(
+        prompt.input_variables + list(prompt.partial_variables)
+    )
     if missing_vars:
         raise ValueError(f"Prompt missing required variables: {missing_vars}")
 
+    prompt = prompt.partial(
+        tools=tools_renderer(list(tools)),
+        tool_names=", ".join([t.name for t in tools]),
+    )
     if not hasattr(llm, "bind_tools"):
         raise ValueError(
             "This function requires a .bind_tools method be implemented on the LLM.",

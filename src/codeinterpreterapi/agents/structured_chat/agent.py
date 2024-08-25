@@ -1,4 +1,4 @@
-from typing import Callable, List, Sequence, Union
+from typing import List, Sequence, Union
 
 from langchain.agents.agent import AgentOutputParser
 from langchain.agents.format_scratchpad import format_log_to_str
@@ -12,10 +12,9 @@ from langchain_core.tools import BaseTool
 from codeinterpreterapi.agents.structured_chat.prompts import create_structured_chat_agent_prompt
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
+from codeinterpreterapi.schema import ToolsRenderer
 from codeinterpreterapi.utils.runnable import create_complement_input
 from codeinterpreterapi.utils.runnable_history import assign_runnable_history
-
-ToolsRenderer = Callable[[List[BaseTool]], str]
 
 
 def create_structured_chat_agent_wrapper(
