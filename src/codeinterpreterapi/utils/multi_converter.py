@@ -1,7 +1,15 @@
-from typing import Any, Dict, List
+from dataclasses import fields, is_dataclass
+from typing import Any, Dict, List, Protocol, Union
 
 from crewai.crews.crew_output import CrewOutput, TaskOutput
 from langchain_core.messages import AIMessageChunk
+from pydantic import BaseModel
+
+from codeinterpreterapi.schema import CodeInterpreterIntermediateResult
+
+
+class DataclassProtocol(Protocol):
+    __dataclass_fields__: dict
 
 
 class MultiConverter:
@@ -58,3 +66,52 @@ class MultiConverter:
             return str(last_task_output.pydantic)
         else:
             return last_task_output.raw
+
+    @staticmethod
+    def _process_crew_output(input_crew_output: CrewOutput) -> str:
+        # TODO: return json or
+        last_task_output: TaskOutput = input_crew_output.tasks_output[-1]
+        if last_task_output.json_dict:
+            return str(last_task_output.json_dict)
+        elif last_task_output.pydantic:
+            return str(last_task_output.pydantic)
+        else:
+            return last_task_output.raw
+
+    @staticmethod
+    def to_CodeInterpreterIntermediateResult(input_dict: Dict) -> CodeInterpreterIntermediateResult:
+        """汎用的なレスポンス処理(配列には未対応)"""
+        output = CodeInterpreterIntermediateResult(context="")
+        is_empty = True
+
+        # CodeInterpreterIntermediateResultの全メンバ名を取得
+        output_attributes = MultiConverter.get_attributes(output)
+
+        for output_attribute in output_attributes:
+            if output_attribute in input_dict:
+                value = input_dict[output_attribute]
+                setattr(output, output_attribute, value)
+                is_empty = False
+
+        # 取れない場合はstr経由で変換する
+        if is_empty:
+            output.context = str(input_dict)
+
+        return output
+
+    @staticmethod
+    def get_attributes(output: Union[Dict, BaseModel, DataclassProtocol]):
+        attributes = []
+
+        if is_dataclass(output):
+            attributes = [field.name for field in fields(output)]
+        elif isinstance(output, BaseModel):
+            attributes = [
+                attr for attr in dir(output) if not callable(getattr(output, attr)) and not attr.startswith("_")
+            ]
+        elif hasattr(output, "__dict__"):
+            attributes = output.__dict__.keys()
+        else:
+            # default
+            attributes = ["content", "thought", "code", "agent_name"]
+        return attributes

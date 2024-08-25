@@ -161,6 +161,9 @@ class SessionStatus(CodeBoxStatus):
     def from_codebox_status(cls, cbs: CodeBoxStatus) -> "SessionStatus":
         return cls(status=cbs.status)
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
     def __repr__(self) -> str:
         return f"<SessionStatus status={self.status}>"
 
@@ -180,6 +183,16 @@ class CodeInterpreterPlan(BaseModel):
         description="タスクの最終的な出力形式を明確に定義します。例えばjson/csvというフォーマットや、カラム名やサイズ情報です。"
     )
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __repr__(self) -> str:
+        ret_str = ""
+        ret_str += f"<agent_name={self.agent_name}>\n"
+        ret_str += f"<task_description={self.task_description}>\n"
+        ret_str += f"<expected_output={self.expected_output}>\n"
+        return ret_str
+
 
 class CodeInterpreterPlanList(BaseModel):
     '''CodeInterpreterPlanの配列をもつ計画全体です。'''
@@ -188,3 +201,13 @@ class CodeInterpreterPlanList(BaseModel):
         description="計画の信頼度[0-100]です。100が完全な計画を意味します。50未満だと不完全計画でオリジナルの問題を直接llmに渡した方が良い結果になります。"
     )
     agent_task_list: List[CodeInterpreterPlan] = Field(description="CodeInterpreterPlanの配列です。")
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __repr__(self) -> str:
+        ret_str = ""
+        ret_str += f"<reliability={self.reliability}>\n"
+        for agent_task in self.agent_task_list:
+            ret_str += f"{agent_task}>\n"
+        return ret_str

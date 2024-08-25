@@ -1,6 +1,6 @@
 import random
 import traceback
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from gui_agent_loop_core.schema.core.schema import AgentName
 from langchain.agents import AgentExecutor
@@ -17,6 +17,7 @@ from codeinterpreterapi.schema import CodeInterpreterIntermediateResult, CodeInt
 from codeinterpreterapi.supervisors.supervisors import CodeInterpreterSupervisor
 from codeinterpreterapi.thoughts.thoughts import CodeInterpreterToT
 from codeinterpreterapi.tools.tools import CodeInterpreterTools
+from codeinterpreterapi.utils.multi_converter import MultiConverter
 
 
 class CodeInterpreterBrain(Runnable):
@@ -36,9 +37,9 @@ class CodeInterpreterBrain(Runnable):
 
         # agents
         self.agent_executors: Optional[List[Runnable]] = []
-        self.agent_executor: Optional[Runnable] = None
+        self.agent_executor: Optional[AgentExecutor] = None
         self.llm_planner: Optional[Runnable] = None
-        self.supervisor: Optional[AgentExecutor] = None
+        self.supervisor: Optional[CodeInterpreterSupervisor] = None
         self.thought: Optional[Runnable] = None
         self.crew_agent: Optional[CodeInterpreterCrew] = None
 
@@ -67,8 +68,7 @@ class CodeInterpreterBrain(Runnable):
         self.llm_planner = CodeInterpreterPlanner.choose_planner(ci_params=self.ci_params)
 
     def initialize_supervisor(self):
-        planner = CodeInterpreterPlanner.choose_planner(ci_params=self.ci_params)
-        self.supervisor = CodeInterpreterSupervisor(planner=planner, ci_params=self.ci_params)
+        self.supervisor = CodeInterpreterSupervisor(planner=self.llm_planner, ci_params=self.ci_params)
 
     def initialize_thought(self):
         self.thought = CodeInterpreterToT.get_runnable_tot_chain(ci_params=self.ci_params)
@@ -88,6 +88,10 @@ class CodeInterpreterBrain(Runnable):
         elif ca == AgentName.SUPERVISOR:
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
+            if "agent_scratchpad" not in input:
+                input['agent_scratchpad'] = ""
+            if "messages" not in input:
+                input['messages'] = []
         elif ca == AgentName.THOUGHT:
             if "intermediate_steps" in input:
                 del input['intermediate_steps']
@@ -102,33 +106,56 @@ class CodeInterpreterBrain(Runnable):
         self.update_next_agent()
         input = self.prepare_input(input)
         print("Brain run self.current_agent=", self.current_agent)
-        output = CodeInterpreterIntermediateResult(context="")
+        print("Brain run input=", input)
         try:
             ca = self.current_agent
             if ca == AgentName.AGENT_EXECUTOR:
                 # TODO: set output
                 self.agent_executor_result = self.agent_executor.invoke(input, config=runnable_config)
+                result = self.agent_executor_result
+
             elif ca == AgentName.LLM_PLANNER:
                 # TODO: set output
                 self.plan_list = self.llm_planner.invoke(input)
+                result = self.plan_list
             elif ca == AgentName.SUPERVISOR:
                 self.supervisor_result = self.supervisor.invoke(input)
-                output = self.supervisor_result
+                result = self.supervisor_result
             elif ca == AgentName.THOUGHT:
                 # TODO: fix it and set output
                 self.thought_result = self.thought.invoke(input, config=runnable_config)
+                result = self.thought_result
             else:
                 # ca == AgentName.CREW
                 self.crew_result = self.crew_agent.run(input, self.plan_list)
-                output = self.crew_result
+                result = self.crew_result
+            output = self._set_output_llm_result(result)
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
+            output = CodeInterpreterIntermediateResult()
             output.context = "Error in CodeInterpreterSession: " f"{e.__class__.__name__}  - {e}"
 
         self.update_agent_score()
         if isinstance(output, str):
             output = CodeInterpreterIntermediateResult(context=output)
+        return output
+
+    def _set_output_llm_result(
+        self, result: Union[Dict[str, Any], CodeInterpreterIntermediateResult, CodeInterpreterPlanList]
+    ) -> CodeInterpreterIntermediateResult:
+        output = CodeInterpreterIntermediateResult(context="")
+        if isinstance(result, Dict):
+            output = MultiConverter.to_CodeInterpreterIntermediateResult(result)
+        elif isinstance(result, CodeInterpreterIntermediateResult):
+            return result
+        elif isinstance(result, CodeInterpreterPlanList):
+            plan_list: CodeInterpreterPlanList = result
+            output.context = str(plan_list)
+        else:
+            output.context = str(result)
+            output.log = f"type={type(result)}"
+
         return output
 
     def __call__(self, input: Input) -> Output:
@@ -190,20 +217,23 @@ def test():
     settings.WORK_DIR = "/tmp"
     llm, llm_tools, runnable_config = prepare_test_llm()
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
+    planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
+    _ = CodeInterpreterSupervisor(planner=planner, ci_params=ci_params)
+
     ci_params.tools = []
     ci_params.tools = CodeInterpreterTools(ci_params).get_all_tools()
     brain = CodeInterpreterBrain(ci_params)
 
-    if False:
+    if True:
         # try1: agent_executor
         print("try1: agent_executor")
         brain.use_agent(AgentName.AGENT_EXECUTOR)
         # sample = "ツールのpythonで円周率を表示するプログラムを実行してください。"
         sample = "please exec print('test output')"
         input_dict = {"input": sample}
-        result = brain.invoke(input_dict)
+        result = brain.invoke(input=input_dict)
         print("result=", result)
-        assert "test output" in result["output"]
+        assert "test output" in result.context
 
     if False:
         # try2: llm_planner
@@ -218,7 +248,7 @@ def test():
         assert "python" == result.tool
         assert "test output" in result.tool_input
 
-    if True:
+    if False:
         # try3: supervisor
         print("try3: supervisor")
         sample = "ステップバイステップで2*5+2を計算して。"
@@ -226,7 +256,7 @@ def test():
             "input": sample,
         }
         brain.use_agent(AgentName.SUPERVISOR)
-        result = brain.invoke(input_dict)
+        result = brain.invoke(input=input_dict, runnable_config=runnable_config)
         print("result=", result)
         # assert (
         #     "test output" in result["output"]
