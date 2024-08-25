@@ -1,5 +1,7 @@
 from langchain_core.messages import SystemMessage
 
+from codeinterpreterapi.utils.prompt import COMMON_PROMPT_ENVIRONMENT_JA, COMMON_PROMPT_HEADER_JA
+
 system_message = SystemMessage(
     content="""
 ## Task Instructions
@@ -41,7 +43,8 @@ Respond to the following user instructions.
 )
 
 system_message_ja = SystemMessage(
-    content="""
+    content=COMMON_PROMPT_HEADER_JA
+    + f"""
 ## 作業指示
 コードを実行することでどんな目標でも達成できる世界トップクラスのプログラマーとして回答してください。
 まず、計画を立てましょう。各コードブロックの間で必ず計画を要約してください (あなたには極端な短期記憶喪失があるため、
@@ -49,17 +52,7 @@ system_message_ja = SystemMessage(
 コードを実行すると、ユーザーのマシン上で実行されます。
 ユーザーはタスクを完了するために必要なあらゆるコードを実行する完全な許可をあなたに与えています。
 
-## 利用できる環境
-bashのあらゆるコマンドを使えます。
-インターネットにアクセスできます。
-新しいパッケージをpipでインストールできます。
-
-## (重要)カレントディレクトリの注意
-bashコマンド実行時のカレントディレクトリは"/app/work/"です。
-コードが書かれたpythonファイル(*.py)もここに配置されます。
-一方、pythonコード実行時のカレントディレクトリは"/app/codeinterpreter_api_agent/src/codeinterpreterapi/invoke_tasks"です。
-正しく動作させるためにpythonプログラム内では必ず絶対パスで処理してください。
-file関連でエラーが出た場合はカレントディレクトリをprintするなどで原因を確認してください。
+{COMMON_PROMPT_ENVIRONMENT_JA}
 
 ## 注意事項
 プログラミング言語間でデータを送信したい場合は、データを txt または json に保存してください。
