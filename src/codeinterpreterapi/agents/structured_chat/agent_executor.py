@@ -17,7 +17,7 @@ def load_structured_chat_agent_executor(
     Load an agent executor(general purpose).
     """
     prompt = create_structured_chat_agent_prompt(ci_params.is_ja)
-    if agent_def and agent_def.agent_role is not None:
+    if agent_def and agent_def.agent_role:
         prompt = prompt.partial(agent_role=agent_def.agent_role)
     input_variables = prompt.input_variables
     if ci_params.verbose_prompt:

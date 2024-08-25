@@ -47,7 +47,7 @@ def test():
     ci_params.verbose_prompt = False
     agent_executor = load_tool_calling_agent_executor(ci_params)
     test_input = "pythonで円周率を表示するプログラムを実行してください。"
-    agent_executor_output = agent_executor.invoke({"input": test_input})
+    agent_executor_output = agent_executor.invoke(input={"input": test_input}, config=runnable_config)
     print("agent_executor_output=", agent_executor_output)
 
 

@@ -117,7 +117,7 @@ def test():
     prompt = create_tool_calling_agent_prompt(ci_params.is_ja)
     agent = create_tool_calling_agent_wrapper(ci_params=ci_params, prompt=prompt)
     test_input = "pythonで円周率を表示するプログラムを実行してください。"
-    agent_output = agent.invoke({"input": test_input, "intermediate_steps": []})
+    agent_output = agent.invoke({"input": test_input, "intermediate_steps": []}, config=runnable_config)
     print("agent_output=", agent_output)
 
 

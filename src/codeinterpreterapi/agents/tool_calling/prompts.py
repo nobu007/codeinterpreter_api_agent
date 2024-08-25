@@ -1,5 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+from codeinterpreterapi.utils.prompt import COMMON_PROMPT_HEADER_JA
+
 SYSTEM_MESSAGE_TEMPLATE = '''{agent_role}
 
 Respond to the human as helpfully and accurately as possible. You have access to the following tools:
@@ -47,8 +49,17 @@ HUMAN_MESSAGE_TEMPLATE = '''{input}
 
             (reminder to respond in a JSON blob no matter what)'''
 
-SYSTEM_MESSAGE_TEMPLATE_JA = '''{agent_role}
+SYSTEM_MESSAGE_TEMPLATE_JA = (
+    COMMON_PROMPT_HEADER_JA
+    + '''
 
+## あなたの役割
+{agent_role}
+
+## タスク説明
+{task_description}
+
+## 作業指示
 初期質問にできる限り丁寧かつ正確に答えてください。以下のツールが利用可能です:
     {tools}
 
@@ -79,12 +90,12 @@ Observation: アクションの結果
 
 (Thought/Action/Observation をN回繰り返す）
 
-Thought: 何を答えるべきかわかった
+Thought: 十分に質問に回答できるレベルになった
 Action:
 
 ```
 {{
-  "action": "最終回答",
+  "action": "Final Answer",
   "action_input": "初期質問への最終的な回答"
 }}
 ```
@@ -93,6 +104,7 @@ Action:
 必要に応じてツールを使用してください。
 適切な場合は直接回答してください。
             '''
+)
 
 HUMAN_MESSAGE_TEMPLATE_JA = '''{input}
 
