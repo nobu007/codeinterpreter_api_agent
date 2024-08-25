@@ -24,7 +24,7 @@ def load_tool_calling_agent_executor(
         print("load_tool_calling_agent_executor prompt.input_variables=", input_variables)
         print("load_tool_calling_agent_executor prompt=", prompt.messages)
     agent = create_tool_calling_agent(
-        llm=ci_params.llm,
+        llm=ci_params.llm_tools,
         tools=ci_params.tools,
         # output_parser=output_parser,
         prompt=prompt,
