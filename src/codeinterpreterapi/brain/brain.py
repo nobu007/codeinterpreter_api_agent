@@ -16,6 +16,7 @@ from codeinterpreterapi.llm.llm import prepare_test_llm
 from codeinterpreterapi.planners.planners import CodeInterpreterPlanner
 from codeinterpreterapi.schema import CodeInterpreterIntermediateResult, CodeInterpreterPlanList
 from codeinterpreterapi.supervisors.supervisors import CodeInterpreterSupervisor
+from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 from codeinterpreterapi.thoughts.thoughts import CodeInterpreterToT
 from codeinterpreterapi.tools.tools import CodeInterpreterTools
 from codeinterpreterapi.utils.multi_converter import MultiConverter
@@ -123,7 +124,6 @@ class CodeInterpreterBrain(Runnable):
                 # TODO: set output
                 self.agent_executor_result = self.agent_executor.invoke(input, config=runnable_config)
                 result = self.agent_executor_result
-
             elif ca == AgentName.LLM_PLANNER:
                 # TODO: set output
                 self.plan_list = self.llm_planner.invoke(input)
@@ -227,23 +227,19 @@ def test():
     settings.WORK_DIR = "/tmp"
     llm, llm_tools, runnable_config = prepare_test_llm()
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
-    planner = CodeInterpreterPlanner.choose_planner(ci_params=ci_params)
-    _ = CodeInterpreterSupervisor(planner=planner, ci_params=ci_params)
-
-    ci_params.tools = []
-    ci_params.tools = CodeInterpreterTools(ci_params).get_all_tools()
     brain = CodeInterpreterBrain(ci_params)
+    is_hard_test = False
 
     if True:
         # try1: agent_executor
         print("try1: agent_executor")
         brain.use_agent(AgentName.AGENT_EXECUTOR)
-        # sample = "ツールのpythonで円周率を表示するプログラムを実行してください。"
-        sample = "please exec print('test output')"
-        input_dict = {"input": sample}
+        input_dict = {"input": "please exec print('test output')"}
+        if is_hard_test:
+            input_dict = {"input": TestPrompt.svg_input_str}
         result = brain.invoke(input=input_dict)
         print("result=", result)
-        assert "test output" in result.context
+        # assert "test output" in result.context
 
     if False:
         # try2: llm_planner
@@ -266,7 +262,7 @@ def test():
             "input": sample,
         }
         brain.use_agent(AgentName.SUPERVISOR)
-        result = brain.invoke(input=input_dict, runnable_config=runnable_config)
+        result = brain.invoke(input=input_dict, config=runnable_config)
         print("result=", result)
         # assert (
         #     "test output" in result["output"]

@@ -25,7 +25,7 @@ class BashTools:
         tools_instance = cls(ci_params=ci_params)
         tools = [
             StructuredTool(
-                name="python_by_code",
+                name="bash_tool",
                 description="bashコマンドを実行します。\n"
                 "コードは文字列として一つにまとめて入力してください。\n"
                 "この文字列は非常に長くても構いません。\n"

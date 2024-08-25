@@ -12,7 +12,7 @@ from langchain_core.tools import StructuredTool
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.config import settings
 from codeinterpreterapi.llm.llm import prepare_test_llm
-from codeinterpreterapi.schema import CodeAndFileInput, File, FileInput
+from codeinterpreterapi.schema import CodeInput, File, FileInput
 from codeinterpreterapi.utils.file_util import FileUtil
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -46,7 +46,7 @@ class PythonTools:
                 else "",
                 func=tools_instance.run_by_code,
                 coroutine=tools_instance.arun_by_code,
-                args_schema=CodeAndFileInput,  # type: ignore
+                args_schema=CodeInput,  # type: ignore
             ),
             StructuredTool(
                 name="python_by_file",
@@ -67,14 +67,14 @@ class PythonTools:
     def run_by_file(self, filename: str) -> str:
         return self._run_local(filename)
 
-    def run_by_code(self, filename: str, code: str) -> str:
-        return self._run_local(filename, code)
+    def run_by_code(self, code: str) -> str:
+        return self._run_local(filename="", code=code)
 
     async def arun_by_file(self, filename: str) -> str:
         return self._arun_local(filename)
 
-    async def arun_by_code(self, filename: str, code: str) -> str:
-        return self._arun_local(filename, code)
+    async def arun_by_code(self, code: str) -> str:
+        return self._arun_local(filename="", code=code)
 
     def _get_command_local(self, filename: str, code: str = "") -> str:
         python_file_path = FileUtil.get_python_file_path(filename=filename)

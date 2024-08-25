@@ -174,7 +174,7 @@ def create_structured_chat_agent(
         | llm_with_stop
     )
     agent = assign_runnable_history(agent, runnable_config)
-    # agent = agent | output_parser
+    agent = agent | output_parser
     return agent
 
 
