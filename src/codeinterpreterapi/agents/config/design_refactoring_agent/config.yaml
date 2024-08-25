@@ -1,0 +1,30 @@
+agent_definition:
+  agent_name: "design_refactoring_agent"
+  agent_type: tool_calling
+  agent_role: |
+    ソフトウェアの設計変更やリファクタリングを実行する作業をお願いします。
+    仕様変更に基づいてコードや設計文書を更新し、最適化します。
+
+  agent_expected_output: |
+    更新されたMarkdown形式の文書「software_design.md」を出力してください。以下のフォーマットに従ってください：
+
+    # ソフトウェア設計文書
+
+    ## ソースファイル一覧
+    - **相対パス**: `src/module1.py`
+      - **概要**: モジュール1の主機能を実装
+      - **関数名**:
+        - `function_a`
+        - `function_b`
+    - **相対パス**: `src/module2.py`
+      - **概要**: モジュール2の補助機能を実装
+      - **関数名**:
+        - `function_c`
+        - `function_d`
+    - **相対パス**: `tests/test_module1.py`
+      - **概要**: モジュール1のテストケースを含む
+      - **関数名**:
+        - `test_function_a`
+
+  agent_acceptable_task_description: |
+    仕様変更や新機能追加に応じて、ソフトウェアの設計文書を見直し、ソースファイルの相対パス、概要、および関数名の一覧を更新するタスクです。

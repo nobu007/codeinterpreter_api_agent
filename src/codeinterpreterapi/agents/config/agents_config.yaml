@@ -5,3 +5,13 @@ agents:
     config_path: split_agent/config.yaml
   - name: fix_agent
     config_path: fix_agent/config.yaml
+  - name: test_case_generator_agent
+    config_path: test_case_generator_agent/config.yaml
+  - name: code_optimizer_agent
+    config_path: code_optimizer_agent/config.yaml
+  - name: code_review_and_forward_agent
+    config_path: code_review_and_forward_agent/config.yaml
+  - name: design_writer_agent
+    config_path: design_writer_agent/config.yaml
+  - name: design_refactoring_agent
+    config_path: design_refactoring_agent/config.yaml
