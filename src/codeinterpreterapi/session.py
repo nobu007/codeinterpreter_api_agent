@@ -433,23 +433,28 @@ class CodeInterpreterSession:
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("generate_response_stream type(response_stream)=", type(response_stream))
 
-            full_output = ""
             for chunk in response_stream:
                 if isinstance(chunk, dict) and "output" in chunk:
                     output = chunk["output"]
                 else:
                     output = str(chunk)
-                full_output += output
 
-            print("generate_response_stream brain.stream full_output=", full_output)
-            yield self._output_handler(full_output)
+                ci_response = self._output_handler(output)
+                yield ci_response
+
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
             if settings.DETAILED_ERROR:
-                yield f"Error in CodeInterpreterSession(generate_response_stream): {e.__class__.__name__} - {e}"
+                yield CodeInterpreterResponse(
+                    content=f"Error in CodeInterpreterSession(generate_response_stream): {e.__class__.__name__} - {e}"
+                )
             else:
-                yield "Sorry, something went wrong while generating your response. Please try again or restart the session."
+                yield CodeInterpreterResponse(
+                    content="Sorry, something went wrong while generating your response. Please try again or restart the session."
+                )
+        finally:
+            yield CodeInterpreterResponse(content="", end=True, agent_name=self.brain.current_agent)
 
     async def agenerate_response_stream(
         self,
@@ -467,13 +472,10 @@ class CodeInterpreterSession:
             response = self.brain.astream(input=user_request.content)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
 
-            full_output = ""
             async for chunk in response:
-                full_output += chunk["output"]
-
-            print("agenerate_response_stream brain.astream full_output=", full_output)
-            ci_response: CodeInterpreterResponse = await self._aoutput_handler(full_output)
-            yield ci_response
+                print("agenerate_response_stream brain.astream chunk=", chunk)
+                ci_response: CodeInterpreterResponse = await self._aoutput_handler(chunk)
+                yield ci_response
         except Exception as e:
             if self.verbose:
                 traceback.print_exc()
