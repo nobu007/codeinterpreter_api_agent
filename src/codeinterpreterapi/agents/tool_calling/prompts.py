@@ -1,8 +1,11 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from codeinterpreterapi.utils.prompt import COMMON_PROMPT_HEADER_JA
+from codeinterpreterapi.utils.prompt import COMMON_PROMPT_ENVIRONMENT_JA, COMMON_PROMPT_HEADER_JA
 
-SYSTEM_MESSAGE_TEMPLATE = '''{agent_role}
+SYSTEM_MESSAGE_TEMPLATE = (
+    COMMON_PROMPT_HEADER_JA
+    + COMMON_PROMPT_ENVIRONMENT_JA
+    + '''{agent_role}
 
 Respond to the human as helpfully and accurately as possible. You have access to the following tools:
 
@@ -42,6 +45,7 @@ Respond to the human as helpfully and accurately as possible. You have access to
             Begin! Reminder to ALWAYS respond with a valid json blob of a single action. Use tools if necessary.
             Respond directly if appropriate. Format is Action:```$JSON_BLOB```then Observation
             '''
+)
 
 HUMAN_MESSAGE_TEMPLATE = '''{input}
 
@@ -51,6 +55,7 @@ HUMAN_MESSAGE_TEMPLATE = '''{input}
 
 SYSTEM_MESSAGE_TEMPLATE_JA = (
     COMMON_PROMPT_HEADER_JA
+    + COMMON_PROMPT_ENVIRONMENT_JA
     + '''
 
 ## あなたの役割

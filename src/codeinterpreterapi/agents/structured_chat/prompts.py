@@ -1,6 +1,11 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-SYSTEM_MESSAGE_TEMPLATE = '''{agent_role}
+from codeinterpreterapi.utils.prompt import COMMON_PROMPT_ENVIRONMENT_JA, COMMON_PROMPT_HEADER_JA
+
+SYSTEM_MESSAGE_TEMPLATE = (
+    COMMON_PROMPT_HEADER_JA
+    + COMMON_PROMPT_ENVIRONMENT_JA
+    + '''{agent_role}
 
 Respond to the human as helpfully and accurately as possible. You have access to the following tools:
 
@@ -40,6 +45,7 @@ Respond to the human as helpfully and accurately as possible. You have access to
             Begin! Reminder to ALWAYS respond with a valid json blob of a single action. Use tools if necessary.
             Respond directly if appropriate. Format is Action:```$JSON_BLOB```then Observation
             '''
+)
 
 HUMAN_MESSAGE_TEMPLATE = '''{input}
 
@@ -47,7 +53,10 @@ HUMAN_MESSAGE_TEMPLATE = '''{input}
 
             (reminder to respond in a JSON blob no matter what)'''
 
-SYSTEM_MESSAGE_TEMPLATE_JA = '''{agent_role}
+SYSTEM_MESSAGE_TEMPLATE_JA = (
+    COMMON_PROMPT_ENVIRONMENT_JA
+    + COMMON_PROMPT_ENVIRONMENT_JA
+    + '''{agent_role}
 
 初期質問にできる限り丁寧かつ正確に答えてください。以下のツールが利用可能です:
     {tools}
@@ -93,6 +102,7 @@ Action:
 必要に応じてツールを使用してください。
 適切な場合は直接回答してください。
             '''
+)
 
 HUMAN_MESSAGE_TEMPLATE_JA = '''{input}
 
