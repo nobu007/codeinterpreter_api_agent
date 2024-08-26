@@ -224,7 +224,7 @@ def test():
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     tools_instance = PythonTools(ci_params=ci_params)
     test_code = "print('test output')"
-    result = tools_instance.run_by_code("main.py", test_code)
+    result = tools_instance.run_by_code(test_code)
     result = tools_instance.run_by_file("main.py")
     print("result=", result)
     assert "test output" in result
