@@ -1,8 +1,9 @@
-from typing import List
+from typing import Dict, List
 
 from crewai import Agent, Crew, Task
 from crewai.crews.crew_output import CrewOutput
 from gui_agent_loop_core.schema.message.schema import BaseMessageContent
+from langchain_core.prompts import PromptTemplate
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
@@ -91,9 +92,42 @@ class CodeInterpreterCrew:
         tasks = self.create_tasks(final_goal=final_goal, plan_list=plan_list)
         my_crew = Crew(agents=self.agents, tasks=tasks)
         print("CodeInterpreterCrew.kickoff() crew_inputs=", last_input)
-        crew_result: CrewOutput = my_crew.kickoff(inputs=last_input)
-        result = CodeInterpreterIntermediateResult(context=crew_result.raw)
+        crew_output: CrewOutput = my_crew.kickoff(inputs=last_input)
+        result = self.llm_convert_to_CodeInterpreterIntermediateResult(crew_output, last_input, final_goal)
         return result
+
+    def llm_convert_to_CodeInterpreterIntermediateResult(
+        self, crew_output: CrewOutput, last_input: Dict, final_goal: str
+    ) -> CodeInterpreterIntermediateResult:
+        prompt_template = """
+        CrewOutputクラスの内容をCodeInterpreterIntermediateResultクラスに詰め替えてください。
+        作業目的を考慮して重要な情報から可能な限り詰めてください。
+        不要な情報や重複する情報はdropしてください。
+        取得できなかった変数はデフォルト値のままにしてください。
+
+        ## 作業目的
+        {final_goal}
+
+        ## crew_output
+        {crew_output}
+        """
+
+        prompt = PromptTemplate(
+            input_variables=["final_goal", "agent_scratchpad", "crew_output"], template=prompt_template
+        )
+
+        structured_llm = self.ci_params.llm.with_structured_output(
+            schema=CodeInterpreterIntermediateResult, include_raw=False
+        )
+        runnable = prompt | structured_llm
+
+        last_input["final_goal"] = final_goal
+        last_input["agent_scratchpad"] = crew_output.raw
+        last_input["crew_output"] = crew_output.tasks_output
+        print("llm_convert_to_CodeInterpreterIntermediateResult last_input=", last_input)
+        output = runnable.invoke(input=last_input)
+        print("llm_convert_to_CodeInterpreterIntermediateResult output=", output)
+        return output
 
 
 def test():
