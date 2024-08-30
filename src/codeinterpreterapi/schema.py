@@ -131,7 +131,7 @@ class CodeInterpreterIntermediateResult(BaseModel):
     language: str = Field(default="", description="llmやagentからの回答本文")
     confidence: float = Field(default=0.95, description="現在の回答の信頼度[0.0～1.0], 1.0が最も信頼できる")
     target_confidence: float = Field(default=0.95, description="目標とする信頼度")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="追加のメタデータを格納する辞書")
+    # metadata: Dict[str, Any] = Field(default_factory=dict, description="追加のメタデータを格納する辞書")
     iteration_count: int = Field(default=0, description="現在の反復回数")
     max_iterations: int = Field(default=10, description="最大反復回数")
 
