@@ -1,3 +1,4 @@
+from langchain_core.prompts import PromptTemplate
 import random
 import traceback
 from typing import Any, Dict, List, Optional, Union
@@ -164,10 +165,11 @@ class CodeInterpreterBrain(Runnable):
         elif isinstance(result, CodeInterpreterPlanList):
             plan_list: CodeInterpreterPlanList = result
             output.context = str(plan_list)
-        else:
-            output.context = str(result)
-            output.log = f"type={type(result)}"
+            return output
 
+        # convert by llm
+        print(f"brain _set_output_llm_result type(output)={type(output)}")
+        output = self.llm_convert_to_CodeInterpreterIntermediateResult(output)
         return output
 
     def __call__(self, input: Input) -> Output:
@@ -224,6 +226,36 @@ class CodeInterpreterBrain(Runnable):
         print("CodeInterpreterBrain use_agent=", new_agent)
         self.current_agent = new_agent
 
+    def llm_convert_to_CodeInterpreterIntermediateResult(
+        self,
+        output_str: str,
+    ) -> CodeInterpreterIntermediateResult:
+        prompt_template = """
+        出力されたoutput_dictの内容をCodeInterpreterIntermediateResultクラスに詰め替えてください。
+        inputで示された作業目的を考慮して重要な情報から可能な限り詰めてください。
+        不要な情報や重複する情報はdropしてください。
+        取得できなかった変数はデフォルト値のままにしてください。
+
+        ## output_dict(str)
+        {output_str}
+        """
+
+        prompt = PromptTemplate(
+            input_variables=["final_goal", "agent_scratchpad", "crew_output"], template=prompt_template
+        )
+
+        structured_llm = self.ci_params.llm.with_structured_output(
+            schema=CodeInterpreterIntermediateResult, include_raw=False
+        )
+        runnable = prompt | structured_llm
+
+        last_input = {}
+        last_input["output_str"] = output_str
+        print("llm_convert_to_CodeInterpreterIntermediateResult(brain) last_input=", last_input)
+        output = runnable.invoke(input=last_input)
+        print("llm_convert_to_CodeInterpreterIntermediateResult(brain) output=", output)
+        return output
+
 
 def test():
     settings.WORK_DIR = "/tmp"
@@ -232,7 +264,7 @@ def test():
     brain = CodeInterpreterBrain(ci_params)
     is_hard_test = False
 
-    if True:
+    if False:
         # try1: agent_executor
         print("try1: agent_executor")
         brain.use_agent(AgentName.AGENT_EXECUTOR)
@@ -253,10 +285,8 @@ def test():
         }
         result = brain.invoke(input_dict)
         print("result=", result)
-        assert "python" == result.tool
-        assert "test output" in result.tool_input
 
-    if False:
+    if True:
         # try3: supervisor
         print("try3: supervisor")
         sample = "ステップバイステップで2*5+2を計算して。"

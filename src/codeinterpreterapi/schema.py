@@ -126,11 +126,13 @@ class CodeInterpreterIntermediateResult(BaseModel):
         description="エージェントの思考プロセスを表す文字列のリスト(最新の思考および根拠を理解するために必要な情報のみが入っている)",
     )
     context: str = Field(description="llmやagentからの回答本文")
-    code: str = Field(default="", description="プログラムのソースコード")
+    code: str = Field(
+        default="", description="プログラムのソースコード(コード自体への説明や不要な改行などを入れないこと)"
+    )
     log: str = Field(default="", description="コードの実行結果やテスト結果などのlog")
-    language: str = Field(default="", description="llmやagentからの回答本文")
+    language: str = Field(default="", description="pythonやjavaなどのプログラム言語")
     confidence: float = Field(default=0.95, description="現在の回答の信頼度[0.0～1.0], 1.0が最も信頼できる")
-    target_confidence: float = Field(default=0.95, description="目標とする信頼度")
+    target_confidence: float = Field(default=0.95, description="処理完了の目標信頼度、これ以上なら完了する")
     # metadata: Dict[str, Any] = Field(default_factory=dict, description="追加のメタデータを格納する辞書")
     iteration_count: int = Field(default=0, description="現在の反復回数")
     max_iterations: int = Field(default=10, description="最大反復回数")
@@ -140,9 +142,9 @@ class CodeInterpreterIntermediateResult(BaseModel):
 
     def __repr__(self) -> str:
         return f"""CodeInterpreterIntermediateResult(
-            thoughts={self.thoughts},
-            context={self.context},
-            code={self.code},
+            thoughts={self.thoughts}
+            context={self.context}
+            code={self.code}
             log={self.log}
             confidence={self.confidence})"""
 

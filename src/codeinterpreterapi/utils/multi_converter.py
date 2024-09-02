@@ -79,7 +79,7 @@ class MultiConverter:
             return last_task_output.raw
 
     @staticmethod
-    def to_CodeInterpreterIntermediateResult(input_dict: Dict) -> CodeInterpreterIntermediateResult:
+    def to_CodeInterpreterIntermediateResult(input_dict: Dict) -> Union[CodeInterpreterIntermediateResult, str]:
         """汎用的なレスポンス処理(配列には未対応)"""
         output = CodeInterpreterIntermediateResult(context="")
         is_empty = True
@@ -93,9 +93,9 @@ class MultiConverter:
                 setattr(output, output_attribute, value)
                 is_empty = False
 
-        # 取れない場合はstr経由で変換する
+        # 取れない場合はstr経由で返して後で変換する
         if is_empty:
-            output.context = str(input_dict)
+            return str(input_dict)
 
         return output
 
