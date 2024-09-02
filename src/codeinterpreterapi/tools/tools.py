@@ -23,7 +23,7 @@ class CodeInterpreterTools:
         return self._additional_tools
 
     def add_tools_shell(self) -> None:
-        use_langchain_shell_tool = False
+        use_langchain_shell_tool = True
         if use_langchain_shell_tool:
             # NOT WORKING
             # google.api_core.exceptions.InvalidArgument: 400 * GenerateContentRequest.tools[0].function_declarations[3].parameters.properties[commands].type: must be specified
