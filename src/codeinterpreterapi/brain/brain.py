@@ -149,6 +149,8 @@ class CodeInterpreterBrain(Runnable):
         self.update_agent_score()
         if isinstance(output, str):
             output = CodeInterpreterIntermediateResult(context=output)
+        elif not isinstance(output, CodeInterpreterIntermediateResult):
+            output = CodeInterpreterIntermediateResult(context=str(output))
         return output
 
     def _set_output_llm_result(

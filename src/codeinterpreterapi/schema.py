@@ -135,6 +135,17 @@ class CodeInterpreterIntermediateResult(BaseModel):
     iteration_count: int = Field(default=0, description="現在の反復回数")
     max_iterations: int = Field(default=10, description="最大反復回数")
 
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __repr__(self) -> str:
+        return f"""CodeInterpreterIntermediateResult(
+            thoughts={self.thoughts},
+            context={self.context},
+            code={self.code},
+            log={self.log}
+            confidence={self.confidence})"""
+
 
 class CodeInterpreterResponse(AIMessage):
     """
