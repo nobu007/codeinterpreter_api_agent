@@ -107,6 +107,10 @@ class BashCommand(BaseModel):
     command: str
 
 
+class ZoltraakInput(BaseModel):
+    request: str
+
+
 class UserRequest(HumanMessage):
     files: list[File] = []
 
