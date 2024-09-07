@@ -198,7 +198,7 @@ class CodeInterpreterPlan(BaseModel):
     '''
 
     agent_name: str = Field(
-        description="Agentの名前です。タスクの名前も、このagent_nameと常に同じになり、primary keyとして使われます。利用可能な文字は[a-Z_]です。task likeな名前にしてください。"
+        description="Agentの名前(=タスクの名前)です。システム内のprimary keyとして使われます。利用可能な文字は[a-Z_]です。task likeな名前にしてください。"
     )
     task_description: str = Field(
         description="タスクの説明です。可能な範囲でpurpose, execution plan, input, outputの詳細を含めます。"

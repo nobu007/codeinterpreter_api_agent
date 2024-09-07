@@ -24,8 +24,9 @@ SYSTEM_MESSAGE_TEMPLATE_JA = '''
     手順１： 問題を理解する
     手順２： 利用可能なAI agentのリスト(agent_info)を確認する
     手順３： 問題解決に利用するべきAI agentをピックアップする
-    手順４： 最適な順番でAI agentを利用するようにinput/outputなどを検討する
-    手順５： CodeInterpreterPlanList として最終的な計画を出力する
+    手順４： ピックアップしたAI agentを利用する順番を決定する
+    手順５： 各AI agentに与えるinput/outputについて検討する
+    手順６： CodeInterpreterPlanList として最終的な計画を出力する
 
     # 利用可能なAI agent
     {agent_info}
@@ -38,8 +39,8 @@ SYSTEM_MESSAGE_TEMPLATE_JA = '''
     - agent_infoに示されたagent_name以外のagentを利用しない。
     - 次の場合は計画を作成せずに長さ0のリストを返す。
       -- 利用可能なagentが不足している
-      -- 計画を立てるまでもない簡単な問題の場合
-      -- 何らかの理由で作業の実現が困難な場合
+      -- 簡単な問題のため計画が不要
+      -- 難しすぎる問題で計画を実行しても有意義な結果が得られない
     - 各ステップの思考と出力は日本語とする。
 
     # 問題

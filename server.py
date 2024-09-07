@@ -4,7 +4,7 @@ from gui_agent_loop_core.connector_impl.core_to_agent.connector_impl_codeinterpr
 )
 from gui_agent_loop_core.gui_agent_loop_core import GuiAgentLoopCore
 
-from codeinterpreterapi import CodeInterpreterSession
+from codeinterpreterapi.session import CodeInterpreterSession
 
 # Load the users .env file into environment variables
 load_dotenv(verbose=True, override=False)
