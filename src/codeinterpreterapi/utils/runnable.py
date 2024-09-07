@@ -35,7 +35,6 @@ def create_complement_input(prompt: Union[BasePromptTemplate, RunnableSequence],
 
         # ステップ1: キーのリマップ
         for key, value in remap.items():
-            print("key, value =", key, value)
             if key in complemented_dict:
                 complemented_dict[value] = complemented_dict[key]
 

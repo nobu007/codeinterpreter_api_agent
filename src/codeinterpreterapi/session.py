@@ -46,12 +46,12 @@ class AgentCallbackHandler(BaseCallbackHandler):
 
     def on_chain_start(self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any) -> Any:
         """Run when chain starts running."""
-        print("AgentCallbackHandler on_chain_start")
+        # print("AgentCallbackHandler on_chain_start")
 
     def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> Any:
         """Run when chain ends running."""
-        print("AgentCallbackHandler on_chain_end type(outputs)=", type(outputs))
-        print("AgentCallbackHandler on_chain_end type(outputs)=", outputs)
+        # print("AgentCallbackHandler on_chain_end type(outputs)=", type(outputs))
+        # print("AgentCallbackHandler on_chain_end type(outputs)=", outputs)
         self.agent_callback_func(outputs)
 
     def on_chat_model_start(
@@ -66,19 +66,19 @@ class AgentCallbackHandler(BaseCallbackHandler):
         **kwargs: Any,
     ) -> Any:
         """Run when chain starts running."""
-        print("AgentCallbackHandler on_chat_model_start")
+        # print("AgentCallbackHandler on_chat_model_start")
 
     def on_chain_error(self, error: Union[Exception, KeyboardInterrupt], **kwargs: Any) -> Any:
         """Run when chain errors."""
-        print("AgentCallbackHandler on_chain_error")
+        # print("AgentCallbackHandler on_chain_error")
 
     def on_agent_action(self, action: AgentAction, **kwargs: Any) -> Any:
         """Run on agent action."""
-        print("AgentCallbackHandler on_agent_action")
+        # print("AgentCallbackHandler on_agent_action")
 
     def on_agent_finish(self, finish: AgentFinish, **kwargs: Any) -> Any:
         """Run on agent end."""
-        print("AgentCallbackHandler on_agent_finish")
+        # print("AgentCallbackHandler on_agent_finish")
 
 
 class CodeInterpreterSession:
@@ -258,7 +258,6 @@ class CodeInterpreterSession:
         return self._input_handler_common(request, add_content_str)
 
     def _output_handler_pre(self, response: Any) -> str:
-        print("_output_handler_pre response(type)=", type(response))
         output_str = MultiConverter.to_str(response)
 
         # TODO: MultiConverterに共通化
@@ -278,7 +277,6 @@ class CodeInterpreterSession:
 
     def _output_handler_post(self, final_response: str) -> CodeInterpreterResponse:
         """Embed images in the response"""
-        print("_output_handler_post final_response(type)=", type(final_response))
         for file in self.output_files:
             if str(file.name) in final_response:
                 # rm ![Any](file.name) from the response
@@ -301,7 +299,6 @@ class CodeInterpreterSession:
         self.output_files = []
         self.output_code_log_list = []
 
-        print("_output_handler self.brain.current_agent=", self.brain.current_agent)
         response = CodeInterpreterResponse(
             content=final_response,
             files=output_files,
@@ -363,7 +360,6 @@ class CodeInterpreterSession:
         user_request = UserRequest(content=user_msg, files=files)
         try:
             input_message = self._input_handler(user_request)
-            print("generate_response type(user_request.content)=", type(user_request.content))
             # ======= ↓↓↓↓ LLM invoke ↓↓↓↓ #=======
             response = self.brain.invoke(input=input_message)
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======

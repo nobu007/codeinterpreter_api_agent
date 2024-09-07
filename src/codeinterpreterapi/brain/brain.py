@@ -118,7 +118,6 @@ class CodeInterpreterBrain(Runnable):
             if isinstance(last_input, Dict):
                 input = self.prepare_input(last_input)
         print("Brain run self.current_agent=", self.current_agent)
-        print("Brain run input=", input)
         try:
             ca = self.current_agent
             if ca == AgentName.AGENT_EXECUTOR:
@@ -251,9 +250,7 @@ class CodeInterpreterBrain(Runnable):
 
         last_input = {}
         last_input["output_str"] = output_str
-        print("llm_convert_to_CodeInterpreterIntermediateResult(brain) last_input=", last_input)
         output = runnable.invoke(input=last_input)
-        print("llm_convert_to_CodeInterpreterIntermediateResult(brain) output=", output)
         return output
 
 

@@ -29,7 +29,7 @@ class MultiConverter:
         elif isinstance(input_obj, CrewOutput):
             input_obj = MultiConverter._process_crew_output(input_obj)
         else:
-            print("MultiConverter to_str type(input_obj)=", type(input_obj))
+            print("MultiConverter to_str unknown type(input_obj)=", type(input_obj))
             return str(input_obj)
 
         # 確実にstr以外は念のため再帰
@@ -37,11 +37,9 @@ class MultiConverter:
 
     @staticmethod
     def _process_ai_message_chunk(chunk: AIMessageChunk) -> str:
-        print(f"MultiConverter.to_str AIMessageChunk input_obj= {chunk}")
         if chunk.content:
             return chunk.content
         tool_call_chunks = chunk.tool_call_chunks
-        print(f"MultiConverter.to_str AIMessageChunk len= {len(tool_call_chunks)}")
         if tool_call_chunks:
             last_chunk = tool_call_chunks[-1]
             return last_chunk.get("text", str(last_chunk))

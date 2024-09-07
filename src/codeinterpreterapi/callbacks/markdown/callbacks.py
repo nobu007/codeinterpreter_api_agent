@@ -25,7 +25,7 @@ class MarkdownFileCallbackHandler(FileCallbackHandler):
     def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
         self._write_header("LLM End")
         if response.llm_output:
-            self._write_to_file(response.llm_output)
+            self._write_to_file(str(response.llm_output))
         for generation in response.generations[0]:
             self._write_to_file(f"```\n{generation.text}\n```\n\n")
         self._write_to_file("---\n\n")

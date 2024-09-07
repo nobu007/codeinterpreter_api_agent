@@ -45,8 +45,6 @@ class CustomAgent(BaseAgent):
         input_dict = self.create_input_dict(task)
         result = self.agent_executor.invoke(input=input_dict, config=self.ci_params.runnable_config)
         result_str = MultiConverter.to_str(result)
-        print("execute_task result(type)=", type(result_str))
-        print("execute_task result=", result_str)
 
         # TODO: return full dict when crewai is updated
         return result_str
@@ -54,7 +52,6 @@ class CustomAgent(BaseAgent):
     def create_input_dict(self, task: CrewTask) -> None:
         # This is interface crewai <=> langchain
         # Tools will be set by langchain layer.
-        print("task=", task)
         task_description = task.description
         if task.context:
             task_description += f"\n\n### コンテキスト\n{task.context}"

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from codeinterpreterapi import CodeInterpreterSession
+from codeinterpreterapi.session import CodeInterpreterSession
 
 
 def main() -> None:

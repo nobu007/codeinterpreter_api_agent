@@ -91,7 +91,6 @@ class CodeInterpreterCrew:
 
         tasks = self.create_tasks(final_goal=final_goal, plan_list=plan_list)
         my_crew = Crew(agents=self.agents, tasks=tasks)
-        print("CodeInterpreterCrew.kickoff() crew_inputs=", last_input)
         crew_output: CrewOutput = my_crew.kickoff(inputs=last_input)
         result = self.llm_convert_to_CodeInterpreterIntermediateResult(crew_output, last_input, final_goal)
         return result
@@ -124,9 +123,7 @@ class CodeInterpreterCrew:
         last_input["final_goal"] = final_goal
         last_input["agent_scratchpad"] = crew_output.raw
         last_input["crew_output"] = crew_output.tasks_output
-        print("llm_convert_to_CodeInterpreterIntermediateResult last_input=", last_input)
         output = runnable.invoke(input=last_input)
-        print("llm_convert_to_CodeInterpreterIntermediateResult output=", output)
         return output
 
 
