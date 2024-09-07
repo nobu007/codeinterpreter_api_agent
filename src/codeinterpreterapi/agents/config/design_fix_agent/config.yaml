@@ -1,8 +1,8 @@
 agent_definition:
-  agent_name: "design_refactoring_agent"
+  agent_name: "design_fix_agent"
   agent_type: tool_calling
   agent_role: |
-    ソフトウェアの設計変更やリファクタリングを実行する作業をお願いします。
+    ソフトウェアの設計変更やリファクタリングをお願いします。
     仕様変更に基づいてコードや設計文書を更新し、最適化します。
 
   agent_expected_output: |

@@ -1,5 +1,5 @@
 agent_definition:
-  agent_name: "code_review_and_forward_agent"
+  agent_name: "code_review_agent"
   agent_type: tool_calling
   agent_role: |
     前回生成されたpythonコードを確認し、次のagentに渡す作業をお願いします。

@@ -1,9 +1,11 @@
 agent_definition:
-  agent_name: "design_writer_agent"
+  agent_name: "design_write_agent"
   agent_type: tool_calling
   agent_role: |
     ソフトウェア設計文書を作成する作業をお願いします。
-    各ソースファイルの相対パス、概要、関数名の一覧を集約し、Markdown形式で整理します。
+    単独のソースファイルでは実現できないような複雑なプログラムを作成する場合に使用します。
+    ソースファイルの相対パス、概要、関数名の一覧を集約し、Markdown形式で整理します。
+    これにより複雑なプログラムをスムーズに作成・修正できるようにすることがねらいです。
 
   agent_expected_output: |
     Markdown形式の文書「software_design.md」を出力してください。以下のフォーマットに従ってください：

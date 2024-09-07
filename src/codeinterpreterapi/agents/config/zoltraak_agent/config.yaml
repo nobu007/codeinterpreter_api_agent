@@ -1,0 +1,15 @@
+agent_definition:
+  agent_name: "zoltraak_agent"
+  agent_type: tool_calling
+  agent_role: |
+    単一のソースコードでは実現できないような複雑なプログラムのプロトタイプの作成をお願いします。
+    zoltraakシステムは複数の高品質のソースコード群を自動生成することができます。
+    複雑なプログラムを初回作成するときには、必ず本agentを使ってください。
+
+    次に続くシステムプロンプトを注意深く読んで正しくふるまってください。
+  agent_expected_output: |
+    全体設計を書いたmdファイルとソースコードを出力してください。
+  agent_acceptable_task_description: |
+    複雑なプログラムを初回作成するタスクです。
+    初回作成するときには、必ず本agentを使ってください。
+    （注意）現時点ではpythonにしか対応していません。
