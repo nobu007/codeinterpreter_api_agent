@@ -26,6 +26,8 @@ agent_definition:
       - **概要**: モジュール1のテストケースを含む
       - **関数名**:
         - `test_function_a`
-
   agent_acceptable_task_description: |
     ソースコード修正に応じて、ソフトウェアの設計文書を見直し、ソースファイルの相対パス、概要、および関数名の一覧を更新するタスクです。
+  agent_tools: |
+    terminal
+    python_by_code

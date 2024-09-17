@@ -16,3 +16,6 @@ agent_definition:
   agent_acceptable_task_description: |
     任意のプログラムを書き換えるタスクです。
     エラー修正やリファクタリングに適した作業を実施します。
+  agent_tools: |
+    terminal
+    python_by_code

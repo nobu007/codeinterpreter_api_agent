@@ -21,3 +21,6 @@ agent_definition:
   agent_acceptable_task_description: |
     問題を解決する単一のプログラムを出力するタスクです。
     小規模なプログラムのプロトタイプ作成に適した作業を実施します。
+  agent_tools: |
+    terminal
+    python_by_code

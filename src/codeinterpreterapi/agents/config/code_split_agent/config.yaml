@@ -14,3 +14,6 @@ agent_definition:
   agent_acceptable_task_description: |
     問題を解決する複数のプログラムを出力するタスクです。
     プログラムの分割に適した作業を実施します。
+  agent_tools: |
+    terminal
+    python_by_code

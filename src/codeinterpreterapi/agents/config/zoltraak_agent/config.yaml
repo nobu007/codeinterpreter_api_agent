@@ -13,3 +13,6 @@ agent_definition:
     複雑なプログラムを初回作成するタスクです。
     初回作成するときには、必ず本agentを使ってください。
     （注意）現時点ではpythonにしか対応していません。
+  agent_tools: |
+    terminal
+    zoltraak

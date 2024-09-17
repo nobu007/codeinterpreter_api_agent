@@ -11,13 +11,14 @@ agent_definition:
     ・テストコードの作成
     ・テストの実行（toolを使ってテストを実行し、結果を確認してください）
     ・テスト結果の分析と報告
-
   agent_expected_output: |
     単一のpythonコードのみ出力してください。説明は全てコメント文にしてください。
     出力されたコードはtest_main.pyとして実装され、後段の処理に使われます。
     決してファイル名などの余分な情報を出力しないでください。
     テスト結果やメッセージは全てprint文で出力してください。
-
   agent_acceptable_task_description: |
     main関数に対する包括的なテストケースを生成し、実行するタスクです。
     エッジケースや境界値のテストも含めます。
+  agent_tools: |
+    terminal
+    python_by_code
