@@ -129,7 +129,7 @@ class CodeInterpreterIntermediateResult(BaseModel):
         default_factory=list,
         description="エージェントの思考プロセスを表す文字列のリスト(最新の思考および根拠を理解するために必要な情報のみが入っている)",
     )
-    context: str = Field(description="llmやagentからの回答本文")
+    context: str = Field(default="", description="llmやagentからの回答本文")
     code: str = Field(
         default="", description="プログラムのソースコード(コード自体への説明や不要な改行などを入れないこと)"
     )
