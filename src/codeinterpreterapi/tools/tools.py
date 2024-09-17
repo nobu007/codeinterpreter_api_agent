@@ -5,6 +5,7 @@ from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.tools.bash import BashTools
 from codeinterpreterapi.tools.code_checker import CodeChecker
 from codeinterpreterapi.tools.python import PythonTools
+from typing import List
 
 
 class CodeInterpreterTools:
@@ -40,3 +41,11 @@ class CodeInterpreterTools:
     def add_tools_web_search(self) -> None:
         tools = [TavilySearchResults(max_results=1)]
         self._additional_tools += tools
+
+    @staticmethod
+    def get_agent_tools(agent_tools: str, all_tools: List[BaseTool]) -> None:
+        selected_tools = []
+        for tool in all_tools:
+            if tool.name in agent_tools:
+                selected_tools.append(tool)
+        return selected_tools

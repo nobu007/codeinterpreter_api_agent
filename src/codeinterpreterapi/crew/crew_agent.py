@@ -132,7 +132,7 @@ def test():
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
     inputs = {"input": TestPrompt.svg_input_str}
-    plan = CodeInterpreterPlan(agent_name="main_function_create_agent", task_description="", expected_output="")
+    plan = CodeInterpreterPlan(agent_name="code_write_agent", task_description="", expected_output="")
     plan_list = CodeInterpreterPlanList(reliability=80, agent_task_list=[plan, plan])
     result = CodeInterpreterCrew(ci_params).run(inputs, plan_list)
     print(result)

@@ -8,6 +8,7 @@ from codeinterpreterapi.agents.structured_chat.agent import create_structured_ch
 from codeinterpreterapi.agents.structured_chat.prompts import create_structured_chat_agent_prompt
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.llm.llm import prepare_test_llm
+from codeinterpreterapi.tools.tools import CodeInterpreterTools
 
 
 def load_structured_chat_agent_executor(
@@ -23,9 +24,10 @@ def load_structured_chat_agent_executor(
     if ci_params.verbose_prompt:
         print("load_structured_chat_agent_executor prompt.input_variables=", input_variables)
         print("load_structured_chat_agent_executor prompt=", prompt.messages)
+    agent_tools = CodeInterpreterTools.get_agent_tools(agent_tools=agent_def.agent_tools, all_tools=ci_params.tools)
     agent = create_structured_chat_agent(
         llm=ci_params.llm_tools,
-        tools=ci_params.tools,
+        tools=agent_tools,
         # output_parser=output_parser,
         prompt=prompt,
         runnable_config=ci_params.runnable_config,
@@ -34,7 +36,7 @@ def load_structured_chat_agent_executor(
     if agent_def:
         agent_def.agent = agent
 
-    agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=ci_params.tools, verbose=ci_params.verbose)
+    agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=agent_tools, verbose=ci_params.verbose)
     if agent_def:
         agent_def.agent_executor = agent_executor
     return agent_executor
