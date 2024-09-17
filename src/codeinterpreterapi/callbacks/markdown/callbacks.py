@@ -32,10 +32,11 @@ class MarkdownFileCallbackHandler(FileCallbackHandler):
 
     def on_chain_start(self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any) -> None:
         self.step_count += 1
-        chain_name = serialized.get("name", "Unknown Chain")
-        self._write_header(f"Chain Start - {chain_name}")
-        self._write_serialized(serialized)
-        self._write_inputs(inputs)
+        if serialized:
+            chain_name = serialized.get("name", "Unknown Chain")
+            self._write_header(f"Chain Start - {chain_name}")
+            self._write_serialized(serialized)
+            self._write_inputs(inputs)
 
     def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> None:
         self._write_header("Chain End")
