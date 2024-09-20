@@ -21,4 +21,4 @@ agent_definition:
     エッジケースや境界値のテストも含めます。
   agent_tools: |
     terminal
-    python_by_code
+    zoltraak_design

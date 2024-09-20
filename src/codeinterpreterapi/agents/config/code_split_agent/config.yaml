@@ -16,4 +16,4 @@ agent_definition:
     プログラムの分割に適した作業を実施します。
   agent_tools: |
     terminal
-    python_by_code
+    zoltraak_python

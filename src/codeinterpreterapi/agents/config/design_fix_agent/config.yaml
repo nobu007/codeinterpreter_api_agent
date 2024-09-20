@@ -4,6 +4,7 @@ agent_definition:
   agent_role: |
     ソフトウェアの設計変更やリファクタリングをお願いします。
     仕様変更に基づいてコードや設計文書を更新し、最適化します。
+    zoltraakシステムは複数の高品質の設計文書を自動生成することができます。
 
   agent_expected_output: |
     更新されたMarkdown形式の文書「software_design.md」を出力してください。以下のフォーマットに従ってください：
@@ -29,5 +30,5 @@ agent_definition:
     仕様変更や新機能追加に応じて、ソフトウェアの設計文書を見直し、ソースファイルの相対パス、概要、および関数名の一覧を更新するタスクです。
   agent_tools: |
     terminal
-    python_by_code
+    zoltraak_design
 

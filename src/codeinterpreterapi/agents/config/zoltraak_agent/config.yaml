@@ -15,4 +15,4 @@ agent_definition:
     （注意）現時点ではpythonにしか対応していません。
   agent_tools: |
     terminal
-    zoltraak
+    zoltraak_python

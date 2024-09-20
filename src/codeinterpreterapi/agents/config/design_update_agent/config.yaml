@@ -30,4 +30,4 @@ agent_definition:
     ソースコード修正に応じて、ソフトウェアの設計文書を見直し、ソースファイルの相対パス、概要、および関数名の一覧を更新するタスクです。
   agent_tools: |
     terminal
-    python_by_code
+    zoltraak_design

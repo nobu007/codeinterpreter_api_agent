@@ -42,4 +42,4 @@ agent_definition:
     重要な役割を担っています。
   agent_tools: |
     terminal
-    python_by_code
+    zoltraak_python

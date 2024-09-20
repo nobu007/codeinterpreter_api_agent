@@ -23,4 +23,4 @@ agent_definition:
     小規模なプログラムのプロトタイプ作成に適した作業を実施します。
   agent_tools: |
     terminal
-    python_by_code
+    zoltraak_python

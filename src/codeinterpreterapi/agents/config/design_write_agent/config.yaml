@@ -31,4 +31,4 @@ agent_definition:
     新規プロジェクトや初期設計段階で、ソフトウェアの全体設計を把握するために、ソースファイルの相対パス、概要、および関数名の一覧を整理した文書を作成するタスクです。
   agent_tools: |
     terminal
-    python_by_code
+    zoltraak_design
