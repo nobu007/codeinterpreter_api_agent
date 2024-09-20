@@ -108,7 +108,14 @@ class BashCommand(BaseModel):
 
 
 class ZoltraakInput(BaseModel):
-    request: str
+    prompt: str = Field(
+        default="このシステムを改善してください。",
+        description="やりたいこと。曖昧な目標でも動作するし、具体的に指定すればピンポイントで編集や改善もできる。",
+    )
+    name: str = Field(
+        default="codeinterpreter",
+        description="処理対象の名前。対象がシステムの場合はディレクトリ名に使われる。対象がpythonファイルの場合はpythonファイル名に使われる。",
+    )
 
 
 class UserRequest(HumanMessage):
