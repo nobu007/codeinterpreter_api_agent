@@ -6,8 +6,9 @@ langchain_experimental
 langchainhub
 langgraph
 langsmith
-https://huggingface.co/spacy/en_core_web_md/resolve/main/en_core_web_md-any-py3-none-any.whl
+https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl
 lxml
 jwt
 crewai
 crewai[tools]
+spacy
