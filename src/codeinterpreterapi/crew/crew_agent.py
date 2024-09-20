@@ -49,13 +49,16 @@ class CodeInterpreterCrew:
 
     def create_tasks(self, final_goal: str, plan_list: CodeInterpreterPlanList) -> List[Task]:
         tasks = []
+        previous_task = None
         for plan in plan_list.agent_task_list:
-            task = self.create_task(final_goal, plan)
+            task = self.create_task(final_goal, plan, previous_task)
             if task is not None:
                 tasks.append(task)
+                previous_task = task
         return tasks
 
-    def create_task(self, final_goal: str, plan: CodeInterpreterPlan) -> Task:
+    def create_task(self, final_goal: str, plan: CodeInterpreterPlan, previous_task: Task = None) -> Task:
+        print("create_task final_goal=", final_goal)
         # find
         for agent_def in self.ci_params.agent_def_list:
             if plan.agent_name == agent_def.agent_name:
@@ -63,10 +66,15 @@ class CodeInterpreterCrew:
                 task_description += (
                     "\n\nサブタスク（これを達成したら完了として処理終了してください）： " + plan.task_description
                 )
+                context = []
+                if previous_task:
+                    context = [previous_task]
+
                 task = Task(
                     expected_output=plan.expected_output,
                     description=task_description,
                     agent=self.name_agent_dict[plan.agent_name],
+                    context=context,
                 )
                 return task
 
@@ -131,9 +139,16 @@ def test():
     llm, llm_tools, runnable_config = prepare_test_llm()
     ci_params = CodeInterpreterParams.get_test_params(llm=llm, llm_tools=llm_tools, runnable_config=runnable_config)
     _ = CodeInterpreterAgent.choose_agent_executors(ci_params=ci_params)
-    inputs = {"input": TestPrompt.svg_input_str}
-    plan = CodeInterpreterPlan(agent_name="code_write_agent", task_description="", expected_output="")
-    plan_list = CodeInterpreterPlanList(reliability=80, agent_task_list=[plan, plan])
+    inputs = {"input": TestPrompt.python_input_str}
+    plan1 = CodeInterpreterPlan(
+        agent_name="design_write_agent",
+        task_description="TestPrompt.python_input_str",
+        expected_output="設計書のmdファイル",
+    )
+    plan2 = CodeInterpreterPlan(
+        agent_name="code_write_agent", task_description="TestPrompt.python_input_str", expected_output="pythonコード"
+    )
+    plan_list = CodeInterpreterPlanList(reliability=80, agent_task_list=[plan1, plan2])
     result = CodeInterpreterCrew(ci_params).run(inputs, plan_list)
     print(result)
 

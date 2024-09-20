@@ -132,7 +132,7 @@ CodeInterpreterRequest = Union[str, List[Union[str, Dict]]]
 
 
 class CodeInterpreterIntermediateResult(BaseModel):
-    thoughts: List[str] = Field(
+    thoughts: Union[str, List[str]] = Field(
         default_factory=list,
         description="エージェントの思考プロセスを表す文字列のリスト(最新の思考および根拠を理解するために必要な情報のみが入っている)",
     )
