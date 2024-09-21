@@ -6,6 +6,8 @@
 #   features: []
 #   all-features: false
 #   with-sources: false
+#   generate-hashes: false
+#   universal: false
 
 -e file:.
 aiohttp==3.9.3
@@ -18,12 +20,14 @@ altair==5.3.0
     # via streamlit
 annotated-types==0.6.0
     # via pydantic
+anthropic==0.34.2
+    # via langchain-anthropic
 anyio==4.3.0
+    # via anthropic
     # via httpx
     # via jupyter-server
-    # via openai
-appnope==0.1.4
-    # via ipykernel
+    # via sse-starlette
+    # via starlette
 argon2-cffi==23.1.0
     # via jupyter-server
     # via nbclassic
@@ -47,6 +51,7 @@ bleach==6.1.0
 blinker==1.7.0
     # via streamlit
 cachetools==5.3.3
+    # via google-auth
     # via streamlit
 certifi==2024.2.2
     # via httpcore
@@ -61,50 +66,98 @@ charset-normalizer==3.3.2
 click==8.1.7
     # via mkdocs
     # via streamlit
+    # via typer
+    # via uvicorn
 codeboxapi==0.1.19
     # via codeinterpreterapi
 colorama==0.4.6
     # via mkdocs-material
+    # via typer
 comm==0.2.2
     # via ipykernel
 dataclasses-json==0.6.4
-    # via langchain
     # via langchain-community
 debugpy==1.8.1
     # via ipykernel
 decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
+    # via langchain-anthropic
     # via nbconvert
 distlib==0.3.8
     # via virtualenv
 distro==1.9.0
-    # via openai
+    # via anthropic
 entrypoints==0.4
     # via jupyter-client
 executing==2.0.1
     # via stack-data
+fastapi==0.115.0
+    # via langserve
+    # via sse-starlette
 fastjsonschema==2.19.1
     # via nbformat
 filelock==3.13.4
+    # via huggingface-hub
     # via virtualenv
 fqdn==1.5.1
     # via jsonschema
 frozenlist==1.4.1
     # via aiohttp
     # via aiosignal
+fsspec==2024.9.0
+    # via huggingface-hub
 ghp-import==2.1.0
     # via mkdocs
 gitdb==4.0.11
     # via gitpython
 gitpython==3.1.43
+    # via langchain-cli
     # via streamlit
+google-ai-generativelanguage==0.6.6
+    # via google-generativeai
+google-api-core==2.20.0
+    # via google-ai-generativelanguage
+    # via google-api-python-client
+    # via google-generativeai
+google-api-python-client==2.146.0
+    # via google-generativeai
+google-auth==2.35.0
+    # via google-ai-generativelanguage
+    # via google-api-core
+    # via google-api-python-client
+    # via google-auth-httplib2
+    # via google-generativeai
+google-auth-httplib2==0.2.0
+    # via google-api-python-client
+google-generativeai==0.7.2
+    # via langchain-google-genai
+googleapis-common-protos==1.65.0
+    # via google-api-core
+    # via grpcio-status
+greenlet==3.1.1
+    # via sqlalchemy
+gritql==0.1.4
+    # via langchain-cli
+grpcio==1.66.1
+    # via google-api-core
+    # via grpcio-status
+grpcio-status==1.62.3
+    # via google-api-core
 h11==0.14.0
     # via httpcore
+    # via uvicorn
 httpcore==1.0.5
     # via httpx
+httplib2==0.22.0
+    # via google-api-python-client
+    # via google-auth-httplib2
 httpx==0.27.0
-    # via openai
+    # via anthropic
+    # via langserve
+    # via langsmith
+huggingface-hub==0.25.0
+    # via tokenizers
 identify==2.5.35
     # via pre-commit
 idna==3.6
@@ -115,6 +168,8 @@ idna==3.6
     # via yarl
 iniconfig==2.0.0
     # via pytest
+invoke==2.2.0
+    # via codeinterpreterapi
 ipykernel==6.29.4
     # via nbclassic
     # via notebook
@@ -137,8 +192,9 @@ jinja2==3.1.3
     # via nbconvert
     # via notebook
     # via pydeck
+jiter==0.5.0
+    # via anthropic
 jsonpatch==1.33
-    # via langchain
     # via langchain-core
 jsonpointer==2.4
     # via jsonpatch
@@ -177,20 +233,34 @@ jupyter-server-terminals==0.5.3
     # via jupyter-server
 jupyterlab-pygments==0.3.0
     # via nbconvert
-langchain==0.1.15
+langchain==0.3.0
     # via codeinterpreterapi
-langchain-community==0.0.32
-    # via langchain
-langchain-core==0.1.41
-    # via langchain
     # via langchain-community
-    # via langchain-openai
-    # via langchain-text-splitters
-langchain-openai==0.1.2
+langchain-anthropic==0.2.1
     # via codeinterpreterapi
-langchain-text-splitters==0.0.1
+langchain-cli==0.0.31
+    # via codeinterpreterapi
+langchain-community==0.3.0
+    # via codeinterpreterapi
+    # via langchain-experimental
+langchain-core==0.3.5
+    # via codeinterpreterapi
     # via langchain
-langsmith==0.1.43
+    # via langchain-anthropic
+    # via langchain-community
+    # via langchain-experimental
+    # via langchain-google-genai
+    # via langchain-text-splitters
+    # via langserve
+langchain-experimental==0.3.0
+    # via codeinterpreterapi
+langchain-google-genai==2.0.0
+    # via codeinterpreterapi
+langchain-text-splitters==0.3.0
+    # via langchain
+langserve==0.3.0
+    # via langchain-cli
+langsmith==0.1.125
     # via langchain
     # via langchain-community
     # via langchain-core
@@ -260,14 +330,14 @@ numpy==1.26.4
     # via pyarrow
     # via pydeck
     # via streamlit
-openai==1.16.2
-    # via langchain-openai
 orjson==3.10.0
+    # via langserve
     # via langsmith
 overrides==7.7.0
     # via jupyter-server
 packaging==23.2
     # via altair
+    # via huggingface-hub
     # via ipykernel
     # via jupyter-server
     # via langchain-core
@@ -305,7 +375,16 @@ prometheus-client==0.20.0
     # via notebook
 prompt-toolkit==3.0.43
     # via ipython
+proto-plus==1.24.0
+    # via google-ai-generativelanguage
+    # via google-api-core
 protobuf==4.25.3
+    # via google-ai-generativelanguage
+    # via google-api-core
+    # via google-generativeai
+    # via googleapis-common-protos
+    # via grpcio-status
+    # via proto-plus
     # via streamlit
 psutil==5.9.8
     # via ipykernel
@@ -316,19 +395,30 @@ pure-eval==0.2.2
     # via stack-data
 pyarrow==15.0.2
     # via streamlit
+pyasn1==0.6.1
+    # via pyasn1-modules
+    # via rsa
+pyasn1-modules==0.4.1
+    # via google-auth
 pycparser==2.22
     # via cffi
-pydantic==2.6.4
+pydantic==2.9.2
+    # via anthropic
     # via codeboxapi
+    # via fastapi
+    # via google-generativeai
     # via langchain
+    # via langchain-anthropic
     # via langchain-core
+    # via langchain-google-genai
+    # via langserve
     # via langsmith
-    # via openai
     # via pydantic-settings
-pydantic-core==2.16.3
+pydantic-core==2.23.4
     # via pydantic
-pydantic-settings==2.2.1
+pydantic-settings==2.5.2
     # via codeboxapi
+    # via langchain-community
 pydeck==0.8.0
     # via streamlit
 pygments==2.17.2
@@ -338,6 +428,8 @@ pygments==2.17.2
     # via rich
 pymdown-extensions==10.7.1
     # via mkdocs-material
+pyparsing==3.1.4
+    # via httplib2
 pytest==8.1.1
 python-dateutil==2.9.0.post0
     # via arrow
@@ -351,6 +443,7 @@ python-json-logger==2.0.7
 pytz==2024.1
     # via pandas
 pyyaml==6.0.1
+    # via huggingface-hub
     # via jupyter-events
     # via langchain
     # via langchain-community
@@ -374,16 +467,16 @@ referencing==0.34.0
     # via jupyter-events
 regex==2023.12.25
     # via mkdocs-material
-    # via tiktoken
 requests==2.31.0
     # via codeboxapi
+    # via google-api-core
+    # via huggingface-hub
     # via jupyter-kernel-gateway
     # via langchain
     # via langchain-community
     # via langsmith
     # via mkdocs-material
     # via streamlit
-    # via tiktoken
 rfc3339-validator==0.1.4
     # via jsonschema
     # via jupyter-events
@@ -392,9 +485,12 @@ rfc3986-validator==0.1.1
     # via jupyter-events
 rich==13.7.1
     # via streamlit
+    # via typer
 rpds-py==0.18.0
     # via jsonschema
     # via referencing
+rsa==4.9
+    # via google-auth
 ruff==0.3.5
 send2trash==1.8.3
     # via jupyter-server
@@ -402,6 +498,8 @@ send2trash==1.8.3
     # via notebook
 setuptools==69.2.0
     # via nodeenv
+shellingham==1.5.4
+    # via typer
 six==1.16.0
     # via asttokens
     # via bleach
@@ -410,16 +508,21 @@ six==1.16.0
 smmap==5.0.1
     # via gitdb
 sniffio==1.3.1
+    # via anthropic
     # via anyio
     # via httpx
-    # via openai
 soupsieve==2.5
     # via beautifulsoup4
 sqlalchemy==2.0.29
     # via langchain
     # via langchain-community
+sse-starlette==1.8.2
+    # via langserve
 stack-data==0.6.3
     # via ipython
+starlette==0.38.5
+    # via fastapi
+    # via sse-starlette
 streamlit==1.33.0
     # via codeinterpreterapi
 tenacity==8.2.3
@@ -432,12 +535,14 @@ terminado==0.18.1
     # via jupyter-server-terminals
     # via nbclassic
     # via notebook
-tiktoken==0.6.0
-    # via langchain-openai
 tinycss2==1.2.1
     # via nbconvert
+tokenizers==0.20.0
+    # via anthropic
 toml==0.10.2
     # via streamlit
+tomlkit==0.12.5
+    # via langchain-cli
 toolz==0.12.1
     # via altair
 tornado==6.4
@@ -450,7 +555,8 @@ tornado==6.4
     # via streamlit
     # via terminado
 tqdm==4.66.2
-    # via openai
+    # via google-generativeai
+    # via huggingface-hub
 traitlets==5.14.2
     # via comm
     # via ipykernel
@@ -466,15 +572,23 @@ traitlets==5.14.2
     # via nbconvert
     # via nbformat
     # via notebook
+typer==0.9.4
+    # via langchain-cli
 types-python-dateutil==2.9.0.20240316
     # via arrow
 typing-extensions==4.11.0
+    # via anthropic
+    # via fastapi
+    # via google-generativeai
+    # via huggingface-hub
+    # via ipython
+    # via langchain-core
     # via mypy
-    # via openai
     # via pydantic
     # via pydantic-core
     # via sqlalchemy
     # via streamlit
+    # via typer
     # via typing-inspect
 typing-inspect==0.9.0
     # via dataclasses-json
@@ -482,12 +596,18 @@ tzdata==2024.1
     # via pandas
 uri-template==1.3.0
     # via jsonschema
+uritemplate==4.1.1
+    # via google-api-python-client
 urllib3==2.2.1
     # via requests
+uvicorn==0.23.2
+    # via langchain-cli
+    # via sse-starlette
 virtualenv==20.25.1
     # via pre-commit
 watchdog==4.0.0
     # via mkdocs
+    # via streamlit
 wcwidth==0.2.13
     # via prompt-toolkit
 webcolors==1.13
