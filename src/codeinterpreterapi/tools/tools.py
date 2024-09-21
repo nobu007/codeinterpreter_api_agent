@@ -1,10 +1,13 @@
-from langchain_community.tools.shell.tool import BaseTool, ShellTool
+from langchain_community.tools.shell.tool import ShellTool
+
+from langchain_core.tools import BaseTool
 from langchain_community.tools.tavily_search import TavilySearchResults
 
 from codeinterpreterapi.brain.params import CodeInterpreterParams
 from codeinterpreterapi.tools.bash import BashTools
 from codeinterpreterapi.tools.code_checker import CodeChecker
 from codeinterpreterapi.tools.python import PythonTools
+from codeinterpreterapi.tools.zoltraak import ZoltraakTools
 from typing import List
 
 
@@ -21,6 +24,7 @@ class CodeInterpreterTools:
         self._additional_tools.extend(CodeChecker.get_tools_code_checker(self._ci_params))
         self.add_tools_shell()
         self.add_tools_web_search()
+        self.add_tools_zoltraak()
         return self._additional_tools
 
     def add_tools_shell(self) -> None:
@@ -41,6 +45,15 @@ class CodeInterpreterTools:
     def add_tools_web_search(self) -> None:
         tools = [TavilySearchResults(max_results=1)]
         self._additional_tools += tools
+
+    def add_tools_zoltraak(self) -> None:
+        tools = ZoltraakTools.get_tools_zoltraak(self._ci_params)
+        self._additional_tools += tools
+
+    @staticmethod
+    def get_zoltraak_tools(ci_params: CodeInterpreterParams) -> None:
+        tools = ZoltraakTools.get_tools_zoltraak(ci_params)
+        return tools
 
     @staticmethod
     def get_agent_tools(agent_tools: str, all_tools: List[BaseTool]) -> None:

@@ -3,11 +3,11 @@ from uuid import UUID
 
 from codeboxapi import CodeBox  # type: ignore
 from gui_agent_loop_core.schema.agent.schema import AgentDefinition
-from langchain.base_language import BaseLanguageModel
+from langchain_core.language_models import BaseLanguageModel
 from langchain.callbacks.base import Callbacks
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import tool
 

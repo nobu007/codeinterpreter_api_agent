@@ -1,9 +1,11 @@
 from typing import Sequence
 
 from langchain.agents import AgentExecutor
-from langchain.chat_models.base import BaseChatModel
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
-from langchain_core.tools import BaseTool, tool
+from langchain_core.tools import tool
+from pydantic import BaseTool
+
 from langgraph.graph import MessageGraph, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 

@@ -2,7 +2,11 @@ from typing import List, Union
 
 from langchain.agents import AgentExecutor
 from langchain.agents.agent import RunnableAgent
-from langchain.schema import AIMessage, Generation
+
+
+from langchain_core.messages import AIMessage
+
+from langchain_core.outputs import Generation
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.runnables import Runnable
 from pydantic import BaseModel, Field

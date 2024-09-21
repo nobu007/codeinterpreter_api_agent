@@ -1,8 +1,8 @@
 from typing import Optional
 
 from langchain_core.messages import SystemMessage
-from langchain_core.pydantic_v1 import BaseSettings, SecretStr
-
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings
 from codeinterpreterapi.prompts import code_interpreter_system_message, code_interpreter_system_message_ja
 
 

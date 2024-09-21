@@ -7,7 +7,9 @@ from uuid import UUID
 from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxStatus  # type: ignore
 from gui_agent_loop_core.schema.message.schema import BaseMessageContent
-from langchain.callbacks.base import BaseCallbackHandler, Callbacks
+from langchain.callbacks.base import Callbacks
+
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
 from langchain_community.chat_message_histories.postgres import PostgresChatMessageHistory
 from langchain_community.chat_message_histories.redis import RedisChatMessageHistory

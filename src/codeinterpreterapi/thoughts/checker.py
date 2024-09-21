@@ -2,7 +2,7 @@ from json import JSONDecodeError
 from typing import Optional, Tuple
 
 import spacy
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
 from langchain_core.runnables import Runnable
 from langchain_experimental.tot.checker import ToTChecker

@@ -4,7 +4,13 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from langchain.callbacks import FileCallbackHandler
-from langchain.schema import AgentAction, AgentFinish, LLMResult
+
+
+from langchain_core.agents import AgentFinish
+
+from langchain_core.agents import AgentAction
+
+from langchain_core.outputs import LLMResult
 
 
 class MarkdownFileCallbackHandler(FileCallbackHandler):

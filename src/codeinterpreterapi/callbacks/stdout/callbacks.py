@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from langchain.callbacks import StdOutCallbackHandler
+from langchain_core.callbacks import StdOutCallbackHandler
 from langchain_core.agents import AgentAction, AgentFinish
 from langchain_core.messages import BaseMessage
 

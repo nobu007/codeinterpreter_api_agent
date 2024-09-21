@@ -63,11 +63,14 @@ class ZoltraakTools:
         return self._common_run(prompt, name, ZoltraakCompilerEnum.DESIGN.value)
 
     def _common_run(self, prompt: str, name: str, compiler: str):
+        # mdファイルを生成して内容をreturnする
+        inout_md_path = f"requirements/{name}.md"
+
         try:
             # シェルインジェクションを防ぐためにshlexを使用
             args = []
             args.append('/home/jinno/.pyenv/shims/zoltraak')
-            args.append(f"\"requirements/{name}.md\"")
+            args.append(f"\"{inout_md_path}\"")
             args.append('-p')
             args.append(f"\"{prompt}\"")
             args.append('-c')
@@ -77,7 +80,14 @@ class ZoltraakTools:
             )
             print("_common_run output_content=", type(output_content))
             print("_common_run output_content=", output_content)
+
+            if os.path.isfile(inout_md_path):
+                with open(inout_md_path, "r") as file:
+                    output_content = file.read()
+                    print("_common_run output_content(zoltraak)=", output_content)
+                    return output_content
             self.command_log.append((args, output_content))
+            print("WARN: no inout_m inout_md_path=", inout_md_path)
             return output_content
 
         except subprocess.CalledProcessError as e:

@@ -4,9 +4,10 @@ import platform
 from typing import Any, Dict
 
 from langchain.agents import AgentExecutor
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.runnables import Runnable
 from langchain_core.runnables.utils import Input
+from langchain_core.prompts import PromptTemplate
 
 from codeinterpreterapi.agents.agents import CodeInterpreterAgent
 from codeinterpreterapi.brain.params import CodeInterpreterParams
@@ -18,11 +19,13 @@ from codeinterpreterapi.supervisors.prompts import create_supervisor_agent_promp
 from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 from codeinterpreterapi.utils.multi_converter import MultiConverter
 
+from codeinterpreterapi.tools.tools import CodeInterpreterTools
+
 
 class CodeInterpreterSupervisor:
     def __init__(self, planner: Runnable, ci_params: CodeInterpreterParams):
         self.planner = ci_params.planner_agent
-        self.ci_params = ci_params
+        self.ci_params: CodeInterpreterParams = ci_params
         self.supervisor_chain = None
         self.supervisor_chain_no_agent = None
         self.initialize()
@@ -82,8 +85,20 @@ class CodeInterpreterSupervisor:
         # TODO: impl
         return self.supervisor_chain
 
+    def zoltraak_pre_process(self, input: Input) -> str:
+        prompt_template = PromptTemplate(
+            template="zoltraakによる前処理でinputを一般的な汎用言語表現に翻訳してください。: {input}"
+        )
+        tools = CodeInterpreterTools.get_zoltraak_tools(self.ci_params)
+        llm_with_tools = self.ci_params.llm.bind_tools(tools)
+        chain = prompt_template | llm_with_tools
+        pre_processed_input = chain.invoke(input)
+        print("zoltraak_pre_process pre_processed_input=", pre_processed_input)
+        return pre_processed_input
+
     def invoke(self, input: Input) -> CodeInterpreterIntermediateResult:
-        planner_result = self.planner.invoke(input, config=self.ci_params.runnable_config)
+        pre_processed_input = self.zoltraak_pre_process(input)
+        planner_result = self.planner.invoke(pre_processed_input, config=self.ci_params.runnable_config)
         print("supervisor.invoke type(planner_result)=", type(planner_result))
         if isinstance(planner_result, CodeInterpreterPlanList):
             plan_list: CodeInterpreterPlanList = planner_result

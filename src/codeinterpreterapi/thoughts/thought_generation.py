@@ -2,8 +2,8 @@
 # https://github.com/langchain-ai/langchain/blob/master/libs/experimental/langchain_experimental/tot/thought_generation.py
 from typing import Any, Dict, List, Tuple
 
-from langchain.prompts.base import BasePromptTemplate
-from langchain_core.pydantic_v1 import Field
+from langchain_core.prompts import BasePromptTemplate
+from pydantic import Field
 from langchain_experimental.tot.checker import ToTChecker
 from langchain_experimental.tot.thought import ThoughtValidity
 from langchain_experimental.tot.thought_generation import ProposePromptStrategy, SampleCoTStrategy

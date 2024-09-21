@@ -1,6 +1,6 @@
 from typing import Any, Optional, Type
 
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import BaseTool
 

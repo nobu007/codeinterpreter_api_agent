@@ -3,10 +3,10 @@ from __future__ import annotations
 from textwrap import indent
 from typing import Any, Dict, List, Optional, Type
 
-from langchain.base_language import BaseLanguageModel
+from langchain_core.language_models import BaseLanguageModel
 from langchain_core.callbacks.manager import AsyncCallbackManagerForChainRun, CallbackManagerForChainRun
 from langchain_core.runnables import Runnable
-from langchain_experimental.pydantic_v1 import Extra
+from langchain_experimental.pydantic_v2 import Extra
 from langchain_experimental.tot.base import ToTChain
 from langchain_experimental.tot.checker import ToTChecker
 from langchain_experimental.tot.controller import ToTController
@@ -21,13 +21,10 @@ class MyToTChain(ToTChain):
     """
 
     llm: Runnable
-    """
-    Language model to use. It must be set to produce different variations for
-    the same prompt.
-    """
+    """Language model to use. It must be set to produce different variations for the same prompt."""
     checker: ToTChecker
     """ToT Checker to use."""
-    output_key: str = "response"  #: :meta private:
+    output_key: str = "response"
     k: int = 10
     """The maximum number of conversation rounds"""
     c: int = 3
@@ -36,7 +33,7 @@ class MyToTChain(ToTChain):
     tot_controller: ToTController = ToTController()
     tot_strategy_class: Type[BaseThoughtGenerationStrategy] = ProposePromptStrategy
     verbose_llm: bool = False
-    thought_generator: BaseThoughtGenerationStrategy = None
+    thought_generator: Optional[BaseThoughtGenerationStrategy] = None
 
     class Config:
         """Configuration for this pydantic object."""
@@ -50,7 +47,7 @@ class MyToTChain(ToTChain):
         print("initialize_thought_generator prompt.input_variables=", input_variables)
 
     @classmethod
-    def from_llm(cls, llm: BaseLanguageModel, **kwargs: Any) -> ToTChain:
+    def from_llm(cls, llm: BaseLanguageModel, **kwargs: Any) -> MyToTChain:
         """
         Create a ToTChain from a language model.
 
@@ -65,18 +62,12 @@ class MyToTChain(ToTChain):
 
     @property
     def input_keys(self) -> List[str]:
-        """Will be whatever keys the prompt expects.
-
-        :meta private:
-        """
+        """Will be whatever keys the prompt expects."""
         return ["problem_description"]
 
     @property
     def output_keys(self) -> List[str]:
-        """Will always return text key.
-
-        :meta private:
-        """
+        """Will always return text key."""
         return [self.output_key]
 
     def log_thought(

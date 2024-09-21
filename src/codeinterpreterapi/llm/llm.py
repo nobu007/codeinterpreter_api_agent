@@ -6,7 +6,7 @@ from google.generativeai.types import Tool as GoogleTool  # type: ignore[import]
 from google.generativeai.types.content_types import FunctionDeclarationType  # type: ignore[import]
 from google.generativeai.types.content_types import ToolDict  # type: ignore[import]
 from google.generativeai.types.safety_types import HarmBlockThreshold, HarmCategory
-from langchain.chat_models.base import BaseChatModel
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Union
 
-from langchain.prompts.base import BasePromptTemplate
+from langchain_core.prompts import BasePromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableSequence
 
 
