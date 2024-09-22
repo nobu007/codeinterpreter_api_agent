@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from textwrap import indent
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Field
 
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.callbacks.manager import AsyncCallbackManagerForChainRun, CallbackManagerForChainRun
 from langchain_core.runnables import Runnable
-from langchain_experimental.pydantic_v2 import Extra
 from langchain_experimental.tot.base import ToTChain
 from langchain_experimental.tot.checker import ToTChecker
 from langchain_experimental.tot.controller import ToTController
@@ -38,7 +37,7 @@ class MyToTChain(ToTChain):
     class Config:
         """Configuration for this pydantic object."""
 
-        extra = Extra.forbid
+        extra = Field(default="forbid")
         arbitrary_types_allowed = True
 
     def initialize_thought_generator(self):
