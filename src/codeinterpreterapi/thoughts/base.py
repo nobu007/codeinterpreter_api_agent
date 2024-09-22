@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from textwrap import indent
-from pydantic import Field
 from typing import Any, Dict, List, Optional, Type
 
 from langchain_core.language_models import BaseLanguageModel
@@ -38,7 +37,7 @@ class MyToTChain(ToTChain):
     class Config:
         """Configuration for this pydantic object."""
 
-        extra = Field(default="forbid")
+        extra = 'forbid'
         arbitrary_types_allowed = True
 
     def initialize_thought_generator(self):
