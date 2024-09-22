@@ -26,6 +26,7 @@ anyio==4.3.0
     # via anthropic
     # via httpx
     # via jupyter-server
+    # via openai
     # via sse-starlette
     # via starlette
 argon2-cffi==23.1.0
@@ -38,6 +39,9 @@ arrow==1.3.0
     # via isoduration
 asttokens==2.4.1
     # via stack-data
+async-timeout==4.0.3
+    # via aiohttp
+    # via langchain
 attrs==23.2.0
     # via aiohttp
     # via jsonschema
@@ -50,6 +54,11 @@ bleach==6.1.0
     # via nbconvert
 blinker==1.7.0
     # via streamlit
+boto3==1.35.24
+    # via cohere
+botocore==1.35.24
+    # via boto3
+    # via s3transfer
 cachetools==5.3.3
     # via google-auth
     # via streamlit
@@ -70,6 +79,8 @@ click==8.1.7
     # via uvicorn
 codeboxapi==0.1.19
     # via codeinterpreterapi
+cohere==5.9.4
+    # via langchain-cohere
 colorama==0.4.6
     # via mkdocs-material
     # via typer
@@ -88,13 +99,20 @@ distlib==0.3.8
     # via virtualenv
 distro==1.9.0
     # via anthropic
+    # via openai
 entrypoints==0.4
     # via jupyter-client
+exceptiongroup==1.2.2
+    # via anyio
+    # via ipython
+    # via pytest
 executing==2.0.1
     # via stack-data
 fastapi==0.115.0
     # via langserve
     # via sse-starlette
+fastavro==1.9.7
+    # via cohere
 fastjsonschema==2.19.1
     # via nbformat
 filelock==3.13.4
@@ -154,8 +172,12 @@ httplib2==0.22.0
     # via google-auth-httplib2
 httpx==0.27.0
     # via anthropic
+    # via cohere
     # via langserve
     # via langsmith
+    # via openai
+httpx-sse==0.4.0
+    # via cohere
 huggingface-hub==0.25.0
     # via tokenizers
 identify==2.5.35
@@ -194,6 +216,10 @@ jinja2==3.1.3
     # via pydeck
 jiter==0.5.0
     # via anthropic
+    # via openai
+jmespath==1.0.1
+    # via boto3
+    # via botocore
 jsonpatch==1.33
     # via langchain-core
 jsonpointer==2.4
@@ -240,6 +266,8 @@ langchain-anthropic==0.2.1
     # via codeinterpreterapi
 langchain-cli==0.0.31
     # via codeinterpreterapi
+langchain-cohere==0.3.0
+    # via codeinterpreterapi
 langchain-community==0.3.0
     # via codeinterpreterapi
     # via langchain-experimental
@@ -247,14 +275,19 @@ langchain-core==0.3.5
     # via codeinterpreterapi
     # via langchain
     # via langchain-anthropic
+    # via langchain-cohere
     # via langchain-community
     # via langchain-experimental
     # via langchain-google-genai
+    # via langchain-openai
     # via langchain-text-splitters
     # via langserve
 langchain-experimental==0.3.0
     # via codeinterpreterapi
+    # via langchain-cohere
 langchain-google-genai==2.0.0
+    # via codeinterpreterapi
+langchain-openai==0.2.0
     # via codeinterpreterapi
 langchain-text-splitters==0.3.0
     # via langchain
@@ -330,6 +363,8 @@ numpy==1.26.4
     # via pyarrow
     # via pydeck
     # via streamlit
+openai==1.47.0
+    # via langchain-openai
 orjson==3.10.0
     # via langserve
     # via langsmith
@@ -350,9 +385,12 @@ paginate==0.5.6
     # via mkdocs-material
 pandas==2.2.1
     # via altair
+    # via langchain-cohere
     # via streamlit
 pandocfilters==1.5.1
     # via nbconvert
+parameterized==0.9.0
+    # via cohere
 parso==0.8.4
     # via jedi
 pathspec==0.12.1
@@ -405,16 +443,20 @@ pycparser==2.22
 pydantic==2.9.2
     # via anthropic
     # via codeboxapi
+    # via cohere
     # via fastapi
     # via google-generativeai
     # via langchain
     # via langchain-anthropic
+    # via langchain-cohere
     # via langchain-core
     # via langchain-google-genai
     # via langserve
     # via langsmith
+    # via openai
     # via pydantic-settings
 pydantic-core==2.23.4
+    # via cohere
     # via pydantic
 pydantic-settings==2.5.2
     # via codeboxapi
@@ -433,6 +475,7 @@ pyparsing==3.1.4
 pytest==8.1.1
 python-dateutil==2.9.0.post0
     # via arrow
+    # via botocore
     # via ghp-import
     # via jupyter-client
     # via pandas
@@ -467,8 +510,10 @@ referencing==0.34.0
     # via jupyter-events
 regex==2023.12.25
     # via mkdocs-material
+    # via tiktoken
 requests==2.31.0
     # via codeboxapi
+    # via cohere
     # via google-api-core
     # via huggingface-hub
     # via jupyter-kernel-gateway
@@ -477,6 +522,7 @@ requests==2.31.0
     # via langsmith
     # via mkdocs-material
     # via streamlit
+    # via tiktoken
 rfc3339-validator==0.1.4
     # via jsonschema
     # via jupyter-events
@@ -492,6 +538,8 @@ rpds-py==0.18.0
 rsa==4.9
     # via google-auth
 ruff==0.3.5
+s3transfer==0.10.2
+    # via boto3
 send2trash==1.8.3
     # via jupyter-server
     # via nbclassic
@@ -511,6 +559,7 @@ sniffio==1.3.1
     # via anthropic
     # via anyio
     # via httpx
+    # via openai
 soupsieve==2.5
     # via beautifulsoup4
 sqlalchemy==2.0.29
@@ -525,6 +574,8 @@ starlette==0.38.5
     # via sse-starlette
 streamlit==1.33.0
     # via codeinterpreterapi
+tabulate==0.9.0
+    # via langchain-cohere
 tenacity==8.2.3
     # via langchain
     # via langchain-community
@@ -535,12 +586,18 @@ terminado==0.18.1
     # via jupyter-server-terminals
     # via nbclassic
     # via notebook
+tiktoken==0.7.0
+    # via langchain-openai
 tinycss2==1.2.1
     # via nbconvert
 tokenizers==0.20.0
     # via anthropic
+    # via cohere
 toml==0.10.2
     # via streamlit
+tomli==2.0.1
+    # via mypy
+    # via pytest
 tomlkit==0.12.5
     # via langchain-cli
 toolz==0.12.1
@@ -557,6 +614,7 @@ tornado==6.4
 tqdm==4.66.2
     # via google-generativeai
     # via huggingface-hub
+    # via openai
 traitlets==5.14.2
     # via comm
     # via ipykernel
@@ -576,20 +634,27 @@ typer==0.9.4
     # via langchain-cli
 types-python-dateutil==2.9.0.20240316
     # via arrow
+types-requests==2.32.0.20240914
+    # via cohere
 typing-extensions==4.11.0
+    # via altair
     # via anthropic
+    # via anyio
+    # via cohere
     # via fastapi
     # via google-generativeai
     # via huggingface-hub
     # via ipython
     # via langchain-core
     # via mypy
+    # via openai
     # via pydantic
     # via pydantic-core
     # via sqlalchemy
     # via streamlit
     # via typer
     # via typing-inspect
+    # via uvicorn
 typing-inspect==0.9.0
     # via dataclasses-json
 tzdata==2024.1
@@ -599,7 +664,9 @@ uri-template==1.3.0
 uritemplate==4.1.1
     # via google-api-python-client
 urllib3==2.2.1
+    # via botocore
     # via requests
+    # via types-requests
 uvicorn==0.23.2
     # via langchain-cli
     # via sse-starlette

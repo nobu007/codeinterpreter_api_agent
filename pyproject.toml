@@ -37,9 +37,11 @@ requires-python = ">= 3.10, <3.13"
 version = "0.1.17"
 include = ["src/**"]
 
+[tool.hatch.build]
+artifacts = ["src/codeinterpreterapi"]
+
 [tool.hatch.build.targets.wheel]
-name = "codeinterpreterapi"
-packages = ["codeinterpreterapi"]
+packages = ["src/codeinterpreterapi"]
 
 [project.urls]
 Code = "https://github.com/nobu007/codeinterpreter-api"
