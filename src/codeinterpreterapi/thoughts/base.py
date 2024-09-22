@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from textwrap import indent
-from typing import Any, Dict, List, Optional, Type, Field
+from pydantic import Field
+from typing import Any, Dict, List, Optional, Type
 
 from langchain_core.language_models import BaseLanguageModel
 from langchain_core.callbacks.manager import AsyncCallbackManagerForChainRun, CallbackManagerForChainRun
