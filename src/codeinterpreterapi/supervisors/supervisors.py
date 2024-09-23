@@ -19,7 +19,7 @@ from codeinterpreterapi.supervisors.prompts import create_supervisor_agent_promp
 from codeinterpreterapi.test_prompts.test_prompt import TestPrompt
 from codeinterpreterapi.utils.multi_converter import MultiConverter
 
-from codeinterpreterapi.tools.tools import CodeInterpreterTools
+from codeinterpreterapi.tools.zoltraak import ZoltraakTools
 
 
 class CodeInterpreterSupervisor:
@@ -87,14 +87,17 @@ class CodeInterpreterSupervisor:
 
     def zoltraak_pre_process(self, input: Input) -> str:
         prompt_template = PromptTemplate(
-            template="zoltraakによる前処理でinputを一般的な汎用言語表現に翻訳してください。: {input}"
+            template="zoltraakによる前処理でinputを一般的な汎用言語表現に翻訳してください。: {input}",
+            input_variables=["input"],
         )
-        tools = CodeInterpreterTools.get_zoltraak_tools(self.ci_params)
-        llm_with_tools = self.ci_params.llm.bind_tools(tools)
-        chain = prompt_template | llm_with_tools
-        pre_processed_input = chain.invoke(input)
-        print("zoltraak_pre_process pre_processed_input=", pre_processed_input)
-        return pre_processed_input
+        zoltraak_tools_instance = ZoltraakTools(ci_params=self.ci_params)
+        zoltraak_pre_process_input = prompt_template.format(input=str(input))
+        zoltraak_pre_process_result = zoltraak_tools_instance.run_design(
+            zoltraak_pre_process_input, "zoltraak_pre_process"
+        )
+        print("zoltraak_pre_process pre_processed_input=", zoltraak_pre_process_input)
+        print("zoltraak_pre_process_result pre_processed_input=", zoltraak_pre_process_result)
+        return zoltraak_pre_process_result
 
     def invoke(self, input: Input) -> CodeInterpreterIntermediateResult:
         pre_processed_input = self.zoltraak_pre_process(input)
