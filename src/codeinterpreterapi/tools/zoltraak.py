@@ -64,30 +64,31 @@ class ZoltraakTools:
 
     def _common_run(self, prompt: str, name: str, compiler: str):
         # mdファイルを生成して内容をreturnする
-        inout_md_path = f"requirements/{name}.md"
+        input_md_filename = f"{name}.md"
+        output_md_path = f"requirements/{input_md_filename}"
 
         try:
             # シェルインジェクションを防ぐためにshlexを使用
             args = []
-            args.append('/home/jinno/.pyenv/shims/zoltraak')
-            args.append(f"\"{inout_md_path}\"")
+            args.append('zoltraak')
+            args.append(f"\"{input_md_filename}\"")
             args.append('-p')
             args.append(f"\"{prompt}\"")
             args.append('-c')
             args.append(f"\"{compiler}\"")
+            print("_common_run command=", " ".join(args))
             output_content = subprocess.check_output(
                 args, stderr=subprocess.STDOUT, universal_newlines=True, cwd=settings.WORK_DIR
             )
             print("_common_run output_content=", type(output_content))
             print("_common_run output_content=", output_content)
 
-            if os.path.isfile(inout_md_path):
-                with open(inout_md_path, "r") as file:
+            if os.path.isfile(output_md_path):
+                with open(output_md_path, "r", encoding="utf-8") as file:
                     output_content = file.read()
-                    print("_common_run output_content(zoltraak)=", output_content)
                     return output_content
             self.command_log.append((args, output_content))
-            print("WARN: no inout_m inout_md_path=", inout_md_path)
+            print("WARN: no file output_md_path=", output_md_path)
             return output_content
 
         except subprocess.CalledProcessError as e:
