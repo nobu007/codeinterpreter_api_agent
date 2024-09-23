@@ -11,9 +11,10 @@ from codeinterpreterapi.callbacks.util import show_callback_info
 class CustomStdOutCallbackHandler(StdOutCallbackHandler):
     def on_chain_start(self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any) -> None:
         """Print out that we are entering a chain."""
-        class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
-        print(f"\n\n\033[1m> Entering new {class_name} chain...\033[0m")  # noqa: T201
-        print(f"inputs={inputs}")
+        if serialized:
+            class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
+            print(f"\n\n\033[1m> Entering new {class_name} chain...\033[0m")  # noqa: T201
+            print(f"inputs={inputs}")
 
     def on_tool_start(self, serialized: Dict[str, Any], input_str: str, **kwargs: Any) -> Any:
         """Print out that we are entering a chain."""
@@ -21,11 +22,17 @@ class CustomStdOutCallbackHandler(StdOutCallbackHandler):
 
     def on_chat_model_start(self, serialized: Dict[str, Any], messages: List[List[BaseMessage]], **kwargs: Any) -> Any:
         """Run when Chat Model starts running."""
-        class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
-        print(f"\n\n\033[1m> Entering new {class_name} on_chat_model_start...\033[0m")  # noqa: T201
+        if serialized:
+            class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
+            print(f"\n\n\033[1m> Entering new {class_name} on_chat_model_start...\033[0m")  # noqa: T201
 
 
 class FullOutCallbackHandler(CustomStdOutCallbackHandler):
+    def show_callback_info_common(self, serialized: Dict[str, Any], tag: str, data: Any) -> None:
+        if serialized:
+            class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
+            show_callback_info(class_name, tag, data)
+
     # CallbackManagerMixin
     def on_llm_start(
         self,
@@ -44,8 +51,7 @@ class FullOutCallbackHandler(CustomStdOutCallbackHandler):
             you're implementing a handler for a chat model,
             you should use on_chat_model_start instead.
         """
-        class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
-        show_callback_info(class_name, "prompts", prompts)
+        self.show_callback_info_common(serialized, "prompts", prompts)
 
     def on_chat_model_start(
         self,
@@ -63,8 +69,7 @@ class FullOutCallbackHandler(CustomStdOutCallbackHandler):
         **ATTENTION**: This method is called for chat models. If you're implementing
             a handler for a non-chat model, you should use on_llm_start instead.
         """
-        class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
-        show_callback_info(class_name, "messages", messages)
+        self.show_callback_info_common(serialized, "messages", messages)
 
     def on_retriever_start(
         self,
@@ -78,8 +83,7 @@ class FullOutCallbackHandler(CustomStdOutCallbackHandler):
         **kwargs: Any,
     ) -> Any:
         """Run when Retriever starts running."""
-        class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
-        show_callback_info(class_name, "query", query)
+        self.show_callback_info_common(serialized, "query", query)
 
     def on_chain_start(
         self,
@@ -93,8 +97,7 @@ class FullOutCallbackHandler(CustomStdOutCallbackHandler):
         **kwargs: Any,
     ) -> Any:
         """Run when chain starts running."""
-        class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
-        show_callback_info(class_name, "inputs", inputs)
+        self.show_callback_info_common(serialized, "inputs", inputs)
 
     def on_tool_start(
         self,
@@ -109,8 +112,7 @@ class FullOutCallbackHandler(CustomStdOutCallbackHandler):
         **kwargs: Any,
     ) -> Any:
         """Run when tool starts running."""
-        class_name = serialized.get("name", serialized.get("id", ["<unknown>"])[-1])
-        show_callback_info(class_name, "input_str", input_str)
+        self.show_callback_info_common(serialized, "input_str", input_str)
 
     def on_chain_end(
         self,
