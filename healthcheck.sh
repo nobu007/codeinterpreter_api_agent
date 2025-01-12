@@ -7,8 +7,14 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') $1" | tee -a "$LOG_FILE"
 }
 APP_START_PY="/app/server.py"
+
+# 所有者変更
+mkdir -p /app/work
+sudo chown -R $USER:$USER /app/work
+
 cp -p .env /app/work/
 cd /app/work
+export PYTHONPATH=.
 
 # /app/server.pyが起動しているかチェック
 if ! pgrep -f "python ${APP_START_PY}" >/dev/null; then
