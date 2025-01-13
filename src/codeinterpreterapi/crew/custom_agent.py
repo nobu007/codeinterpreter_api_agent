@@ -22,6 +22,7 @@ class CustomAgent(BaseAgent):
         default=None,
         description="Callback to be executed after each step of the agent execution.",
     )
+    multimodal: Optional[bool] = Field(default=False, description="Enable multimodal mode.")
 
     def __init__(self, agent_executor: Any, ci_params: CodeInterpreterParams, **data):
         config = data.pop("config", {})
@@ -31,6 +32,7 @@ class CustomAgent(BaseAgent):
         self.function_calling_llm = "dummy"  # This is not used
         self.allow_code_execution = False
         self.step_callback = None
+        self.multimodal = False
 
     def interpolate_inputs(self, inputs: Dict[str, Any]) -> None:
         """Interpolate inputs into the task description and expected output."""
