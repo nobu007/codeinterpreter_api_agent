@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Protocol, Union
 from crewai.crews.crew_output import CrewOutput, TaskOutput
 from langchain_core.messages import AIMessageChunk
 from pydantic import BaseModel
+from langchain_core.prompt_values import ChatPromptValue
+from langchain_core.agents import AgentFinish
 
 from codeinterpreterapi.schema import CodeInterpreterIntermediateResult
 
@@ -28,6 +30,10 @@ class MultiConverter:
             input_obj = MultiConverter._process_dict(input_obj)
         elif isinstance(input_obj, CrewOutput):
             input_obj = MultiConverter._process_crew_output(input_obj)
+        elif isinstance(input_obj, ChatPromptValue):
+            input_obj = input_obj.to_string()
+        elif isinstance(input_obj, AgentFinish):
+            input_obj = input_obj.messages()
         else:
             print("MultiConverter to_str unknown type(input_obj)=", type(input_obj))
             return str(input_obj)
