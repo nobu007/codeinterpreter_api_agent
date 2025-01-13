@@ -92,7 +92,7 @@ class CodeInterpreterSupervisor:
         )
         zoltraak_tools_instance = ZoltraakTools(ci_params=self.ci_params)
         zoltraak_pre_process_input = prompt_template.format(input=str(input))
-        zoltraak_pre_process_result = zoltraak_tools_instance.run_design(
+        zoltraak_pre_process_result = zoltraak_tools_instance.run_prompt(
             zoltraak_pre_process_input, "zoltraak_pre_process"
         )
         print("zoltraak_pre_process pre_processed_input=", zoltraak_pre_process_input)

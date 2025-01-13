@@ -16,6 +16,7 @@ INVOKE_TASKS_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "../invoke_tasks"))
 class ZoltraakCompilerEnum(Enum):
     PYTHON_CODE = "dev_obj"
     DESIGN = "general_def"
+    PROMPT = "general_prompt"
 
 
 class ZoltraakTools:
@@ -41,9 +42,17 @@ class ZoltraakTools:
                 name="zoltraak_design",
                 description="あいまいなリクエストから設計文書を作成します。\n"
                 "このツールは基本的な要件を満たすための具体的な設計を定義できます。\n"
-                "設計作業を進めるときは、このツール実行してください。",
+                "設計作業を進めるときは、このツールを最初に実行してください。",
                 func=tools_instance.run_design,
                 coroutine=tools_instance.arun_design,
+                args_schema=ZoltraakInput,
+            ),
+            StructuredTool(
+                name="zoltraak_prompt",
+                description="あいまいなリクエストから構造化されたユーザリクエスト統一記述書を作成します。\n"
+                "リクエストを新規に処理するときは、このツールを最初に実行してください。",
+                func=tools_instance.run_prompt,
+                coroutine=tools_instance.arun_prompt,
                 args_schema=ZoltraakInput,
             ),
         ]
@@ -62,10 +71,17 @@ class ZoltraakTools:
     async def arun_design(self, prompt: str, name: str) -> str:
         return self._common_run(prompt, name, ZoltraakCompilerEnum.DESIGN.value)
 
+    def run_prompt(self, prompt: str, name: str) -> str:
+        return self._common_run(prompt, name, ZoltraakCompilerEnum.PROMPT.value)
+
+    async def arun_prompt(self, prompt: str, name: str) -> str:
+        return self._common_run(prompt, name, ZoltraakCompilerEnum.PROMPT.value)
+
     def _common_run(self, prompt: str, name: str, compiler: str):
         # mdファイルを生成して内容をreturnする
         input_md_filename = f"{name}.md"
-        output_md_path = f"requirements/{input_md_filename}"
+        output_md_path = f"pre_{input_md_filename}"
+        output_md_path = os.path.abspath(output_md_path)
 
         try:
             # シェルインジェクションを防ぐためにshlexを使用
@@ -74,8 +90,17 @@ class ZoltraakTools:
             args.append(f"\"{input_md_filename}\"")
             args.append('-p')
             args.append(f"\"{prompt}\"")
-            args.append('-c')
-            args.append(f"\"{compiler}\"")
+            # args.append('-c')
+            # args.append(f"\"{compiler}\"")
+            args.append('-ml')
+            args.append('1_')
+            args.append('-mle')
+            args.append('11_')
+            if compiler == ZoltraakCompilerEnum.PROMPT.value:
+                # プロンプトの場合はzoltraakレイヤ１だけ実行したいのでレガシーモードを指定
+                args.append('-mm')
+                args.append('zoltraak_legacy')
+
             print("_common_run command=", " ".join(args))
             output_content = subprocess.check_output(
                 args, stderr=subprocess.STDOUT, universal_newlines=True, cwd=settings.WORK_DIR
@@ -87,6 +112,8 @@ class ZoltraakTools:
                 with open(output_md_path, "r", encoding="utf-8") as file:
                     output_content = file.read()
                     return output_content
+            else:
+                print("WARN: no file output_md_path=", output_md_path)
             self.command_log.append((args, output_content))
             print("WARN: no file output_md_path=", output_md_path)
             return output_content
