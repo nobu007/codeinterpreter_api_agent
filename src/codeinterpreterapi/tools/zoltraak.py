@@ -78,20 +78,27 @@ class ZoltraakTools:
         return self._common_run(prompt, name, ZoltraakCompilerEnum.PROMPT.value)
 
     def _common_run(self, prompt: str, name: str, compiler: str):
-        # mdファイルを生成して内容をreturnする
-        input_md_filename = f"{name}.md"
-        output_md_path = f"pre_{input_md_filename}"
-        output_md_path = os.path.abspath(output_md_path)
+        # inputのmdファイル名と生成される場所
+        input_md_filename = f"{name}_{compiler}.md"
+        output_md_path = os.path.abspath(f"pre_{input_md_filename}")
+
+        # promptのmdファイルを生成する
+        prompt_md_filename = f"prompt_{input_md_filename}"
+        prompt_output_md_path = os.path.abspath(prompt_md_filename)
+
+        # promptをmdファイルに書き込む
+        with open(prompt_output_md_path, "w", encoding="utf-8") as file:
+            file.write(prompt)
 
         try:
             # シェルインジェクションを防ぐためにshlexを使用
             args = []
             args.append('zoltraak')
-            args.append(f"\"{input_md_filename}\"")
+            # args.append(f"\"{input_md_filename}\"")
             args.append('-p')
-            args.append(f"\"{prompt}\"")
-            # args.append('-c')
-            # args.append(f"\"{compiler}\"")
+            args.append(f"\"{prompt_md_filename}\"")
+            args.append('-c')
+            args.append(f"\"{input_md_filename}\"")
             args.append('-ml')
             args.append('1_')
             args.append('-mle')
