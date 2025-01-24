@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Callable, List, Union
+from typing import Callable, List, Union, Dict, Any
 
 from langchain_community.chat_message_histories import FileChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
@@ -31,9 +31,64 @@ def assign_runnable_history(runnable: Runnable, runnable_config: RunnableConfig)
     return runnable
 
 
-# 会話履歴の取得
-def get_runnable_history(runnable: Runnable) -> BaseChatMessageHistory:
-    runnable_with_history = RunnableWithMessageHistory(
+def get_runnable_history(runnable: Runnable) -> RunnableWithMessageHistory:
+    """
+    メッセージ履歴を管理するRunnableを生成する。
+    異なる入力形式に対応できるよう拡張している。
+    """
+
+    class AdaptiveMessageHistory(RunnableWithMessageHistory):
+        def _get_input_messages(self, input_val: Dict[str, Any]) -> str:
+            """
+            異なる入力形式に対応した入力メッセージの取得。
+            メッセージ履歴に格納する文字列をinputのdictのkeyから判断する。
+            """
+            # 型チェック: input_valが辞書形式であることを確認
+            if not isinstance(input_val, dict):
+                print(
+                    f"_get_input_messages Unexpected input type: {type(input_val)}. Expected dict. Input: {input_val}"
+                )
+                return str(input_val)
+
+            # 標準的な'input'キーをチェック
+            if "input" in input_val:
+                return self._ensure_string(input_val["input"])
+
+            # AgentのAction形式をチェック
+            if "action_input" in input_val:
+                action_input = input_val["action_input"]
+                # codeキーが存在する場合
+                if isinstance(action_input, dict) and "code" in action_input:
+                    return self._ensure_string(action_input["code"])
+                return self._ensure_string(action_input)
+
+            # その他の既知の入力形式をチェック
+            known_keys = ["text", "content", "message"]
+            for key in known_keys:
+                if key in input_val:
+                    return self._ensure_string(input_val[key])
+
+            # 未知のキー形式をログに記録
+            print(f"_get_input_messages Unknown input format: {input_val}. Using fallback.")
+
+            # フォールバック: 文字列化して返す
+            return str(input_val)
+
+        def _ensure_string(self, value: Any) -> str:
+            """
+            値を安全に文字列化するヘルパー関数。
+            リストの場合は結合し、それ以外は文字列化する。
+            """
+            if isinstance(value, list):
+                try:
+                    return ", ".join(map(str, value))  # リストをカンマ区切りの文字列に変換
+                except Exception as e:
+                    print(f"_ensure_string Failed to join list: {value}. Error: {e}")
+                    return str(value)
+            return str(value)
+
+    # 拡張されたRunnableWithMessageHistoryを使用
+    runnable_with_history = AdaptiveMessageHistory(
         runnable,
         get_by_session_id,
         input_messages_key="input",
