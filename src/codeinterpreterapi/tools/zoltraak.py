@@ -113,7 +113,7 @@ class ZoltraakTools:
                 args, stderr=subprocess.STDOUT, universal_newlines=True, cwd=settings.WORK_DIR
             )
             print("_common_run output_content=", type(output_content))
-            print("_common_run output_content=", output_content)
+            # print("_common_run output_content=", output_content)
 
             if os.path.isfile(output_md_path):
                 with open(output_md_path, "r", encoding="utf-8") as file:
