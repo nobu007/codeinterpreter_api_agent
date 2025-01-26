@@ -6,8 +6,7 @@ from langchain_core.messages import AIMessageChunk
 from pydantic import BaseModel
 from langchain_core.prompt_values import ChatPromptValue
 from langchain_core.agents import AgentFinish
-
-from codeinterpreterapi.schema import CodeInterpreterIntermediateResult
+from codeinterpreterapi.schema import CodeInterpreterIntermediateResult, CodeInterpreterPlanList
 
 
 class DataclassProtocol(Protocol):
@@ -34,6 +33,8 @@ class MultiConverter:
             input_obj = input_obj.to_string()
         elif isinstance(input_obj, AgentFinish):
             input_obj = input_obj.messages()
+        elif isinstance(input_obj, CodeInterpreterPlanList):
+            input_obj = str(input_obj)
         else:
             print("MultiConverter to_str unknown type(input_obj)=", type(input_obj))
             return str(input_obj)
