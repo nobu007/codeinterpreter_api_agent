@@ -4,4 +4,5 @@
 
 eval "$(pyenv init -)"
 cd GuiAgentLoopCore
+pip install --upgrade pip
 pip install -e .
