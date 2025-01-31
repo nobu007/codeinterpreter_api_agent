@@ -3,6 +3,8 @@ import traceback
 from types import TracebackType
 from typing import Any, AsyncGenerator, Dict, Iterator, List, Optional, Type
 from uuid import UUID
+import time
+
 
 from codeboxapi import CodeBox  # type: ignore
 from codeboxapi.schema import CodeBoxStatus  # type: ignore
@@ -42,9 +44,19 @@ def _handle_deprecated_kwargs(kwargs: dict) -> None:
 class AgentCallbackHandler(BaseCallbackHandler):
     """Base callback handler that can be used to handle callbacks from langchain."""
 
-    def __init__(self, agent_callback_func: callable):
-        print("AgentCallbackHandler __init__ agent_callback_func=", agent_callback_func)
-        self.agent_callback_func = agent_callback_func
+    def __init__(self):
+        self.messages = []  # チェーン内の応答を格納
+        self.complete = False  # チェーン終了フラグ
+
+    def stream_responses(self):
+        """
+        ポーリング的に応答をストリームするジェネレータ関数
+        """
+        while not self.complete or len(self.messages) > 0:
+            if self.messages:
+                yield self.messages.pop(0)  # メッセージを逐次取得
+            else:
+                time.sleep(0.5)  # メッセージがない場合の待機
 
     ### on_chain callbacks ###
     def on_chain_start(
@@ -70,6 +82,7 @@ class AgentCallbackHandler(BaseCallbackHandler):
             kwargs (Any): Additional keyword arguments.
         """
         print("AgentCallbackHandler on_chain_start run_id=", run_id)
+        self.complete = False
 
     def on_chain_end(
         self,
@@ -87,8 +100,8 @@ class AgentCallbackHandler(BaseCallbackHandler):
             parent_run_id (UUID): The parent run ID. This is the ID of the parent run.
             kwargs (Any): Additional keyword arguments."""
         print("AgentCallbackHandler on_chain_end run_id=", run_id, ", type(outputs)=", type(outputs))
-        print("AgentCallbackHandler on_chain_end self.agent_callback_func=", self.agent_callback_func)
-        self.agent_callback_func(outputs)
+        self.messages.append(outputs)  # 最終応答を格納
+        self.complete = True  # 終了フラグを設定
 
     def on_chain_error(
         self,
@@ -106,6 +119,8 @@ class AgentCallbackHandler(BaseCallbackHandler):
             parent_run_id (UUID): The parent run ID. This is the ID of the parent run.
             kwargs (Any): Additional keyword arguments."""
         print("AgentCallbackHandler on_chain_error")
+        self.messages.append(str(error))  # エラーを格納
+        self.complete = True  # 終了フラグを設定
 
     ### on_chat callbacks ###
     def on_chat_model_start(
@@ -243,6 +258,7 @@ class CodeInterpreterSession:
             additional_tools = []
         _handle_deprecated_kwargs(kwargs)
         self.verbose = kwargs.get("verbose", settings.DEBUG)
+        self.agent_callback_handler = AgentCallbackHandler()
         llm_lite: BaseLanguageModel = CodeInterpreterLlm.get_llm_lite()
         llm_fast: BaseLanguageModel = CodeInterpreterLlm.get_llm_fast()
         llm_smart: BaseLanguageModel = CodeInterpreterLlm.get_llm_smart()
@@ -256,7 +272,7 @@ class CodeInterpreterSession:
         runnable_config = RunnableConfig(
             configurable=configurable,
             # callbacks=[],
-            callbacks=[AgentCallbackHandler(self._output_handler), MarkdownFileCallbackHandler("langchain_log.md")],
+            callbacks=[self.agent_callback_handler, MarkdownFileCallbackHandler("langchain_log.md")],
         )
 
         # ci_params = {}
@@ -582,12 +598,20 @@ class CodeInterpreterSession:
             # ======= ↑↑↑↑ LLM invoke ↑↑↑↑ #=======
             print("generate_response_stream type(response_stream)=", type(response_stream))
 
+            # wait for the stream_responses from agent
+            for stream_response in self.agent_callback_handler.stream_responses():
+                ci_response = self._output_handler(stream_response)
+                print("generate_response_stream ci_response(agent)=", type(stream_response))
+                yield ci_response
+
+            # wait for the final response
             for chunk in response_stream:
                 if isinstance(chunk, dict) and "output" in chunk:
                     output = chunk["output"]
                 else:
                     output = str(chunk)
 
+                print("generate_response_stream ci_response(output)=", type(chunk))
                 ci_response = self._output_handler(output)
                 yield ci_response
 
